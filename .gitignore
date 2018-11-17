@@ -1,0 +1,9 @@
+/.eggs/
+/.idea/
+/.mypy_cache/
+/build/
+/craftlangc.egg-info/
+/dist/
+/venv/
+
+__pycache__/
