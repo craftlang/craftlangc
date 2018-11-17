@@ -12,7 +12,7 @@ All functions follow the following conventions:
 '''
 
 __author__ = 'Matteo Morena'
-__all__ = ('parse_file', 'parse_statement', 'parse_block', 'parse_expression', 'ParseError')
+__all__ = ('parse_file', 'parse_statement', 'parse_block', 'parse_expr', 'ParseError')
 
 from typing import List
 
@@ -28,8 +28,8 @@ def parse_file(walker: Walker) -> File:
 	if _parse_indent(walker) > 0:
 		raise ParseError('Unexpected indent')
 
-	namespace = _parse_namespace_declaration(walker)
-	functions: List[FuncDef] = []
+	namespace = _parse_namespace_decl(walker)
+	func_defs: List[FuncDef] = []
 
 	while True:
 		indent = _parse_indent(walker)
@@ -41,17 +41,17 @@ def parse_file(walker: Walker) -> File:
 			raise ParseError('Unexpected indent')
 
 		pos = walker.pos
-		function = _parse_function_definition(walker)
-		if str(function.identifier) in map(lambda f: str(f.identifier), functions):
+		func_def = _parse_func_def(walker)
+		if str(func_def.identifier) in map(lambda f: str(f.identifier), func_defs):
 			walker.pos = pos
-			raise ParseError(f"Function '{function.identifier}' already defined")
+			raise ParseError(f"Function '{func_def.identifier}' already defined")
 
-		functions += [function]
+		func_defs += [func_def]
 
-	return File(namespace, functions)
+	return File(namespace, func_defs)
 
 
-def _parse_namespace_declaration(walker: Walker) -> NamespaceDecl:
+def _parse_namespace_decl(walker: Walker) -> NamespaceDecl:
 	if walker.match('namespace') is None:
 		raise ParseError('Expected namespace declaration')
 
@@ -82,7 +82,7 @@ def _parse_namespace_declaration(walker: Walker) -> NamespaceDecl:
 	return NamespaceDecl(components)
 
 
-def _parse_function_definition(walker: Walker) -> FuncDef:
+def _parse_func_def(walker: Walker) -> FuncDef:
 	identifier = _parse_identifier(walker)
 	if len(identifier) == 0:
 		raise ParseError('Illegal function identifier')
@@ -159,7 +159,7 @@ def parse_statement(walker: Walker, current_indent: int) -> Statement:
 		walker.advance()
 		operator = Token(walker, pos, walker.pos - pos)
 		walker.match(is_whitespace)
-		return AssignStatement(identifier, operator, parse_expression(walker))
+		return AssignStatement(identifier, operator, parse_expr(walker))
 
 	# If we got '*=', '/=', '%=', '+=', '-=', '&=', '^=' or '|=' after the identifier, we have an assignment
 	if ahead2 in {'*=', '/=', '%=', '+=', '-=', '&=', '^=', '|='}:
@@ -167,7 +167,7 @@ def parse_statement(walker: Walker, current_indent: int) -> Statement:
 		walker.advance(2)
 		operator = Token(walker, pos, walker.pos - pos)
 		walker.match(is_whitespace)
-		return AssignStatement(identifier, operator, parse_expression(walker))
+		return AssignStatement(identifier, operator, parse_expr(walker))
 
 	# If we got '><' after the identifier, we have a swap statement
 	if ahead2 == '><':
@@ -188,7 +188,7 @@ def parse_statement(walker: Walker, current_indent: int) -> Statement:
 	# If we got a '(' after the identifier, we probably have a function call.
 	# There's an ambiguity if identifier is 'if' or 'while': do we have a function call or an if/while statement?
 	if ahead == '(':
-		arguments = _parse_arguments(walker)
+		arguments = _parse_args(walker)
 
 		# After we found the list of arguments for the probable function call, we deal with the ambiguity mentioned
 		# before. If the identifier is 'if' or 'while' we resolve the ambiguity in the following manner:
@@ -232,14 +232,14 @@ def parse_statement(walker: Walker, current_indent: int) -> Statement:
 		if len(walker.match(is_whitespace) or '') == 0 and walker.ahead() != '(':
 			raise ParseError('Expected return expression')
 
-		return ReturnStatement(parse_expression(walker))
+		return ReturnStatement(parse_expr(walker))
 
 	# If the identifier is 'if', we have an if statement
 	if identifier_lexeme == 'if':
 		if len(walker.match(is_whitespace) or '') == 0 and walker.ahead() != '(':
 			raise ParseError('Expected if condition')
 
-		condition = parse_expression(walker)
+		condition = parse_expr(walker)
 		walker.match(is_whitespace)
 
 		if walker.match(is_newline) is None:
@@ -271,7 +271,7 @@ def parse_statement(walker: Walker, current_indent: int) -> Statement:
 		if len(walker.match(is_whitespace) or '') == 0 and walker.ahead() != '(':
 			raise ParseError('Expected while condition')
 
-		condition = parse_expression(walker)
+		condition = parse_expr(walker)
 		walker.match(is_whitespace)
 
 		if walker.match(is_newline) is None:
@@ -293,7 +293,7 @@ def parse_statement(walker: Walker, current_indent: int) -> Statement:
 			if not is_whitespace(ahead2) and ahead2 != '(':
 				raise ParseError('Expected condition for do-while statement')
 			walker.match(is_whitespace)
-			return DoWhileStatement(block, parse_expression(walker))
+			return DoWhileStatement(block, parse_expr(walker))
 		else:
 			walker.pos = pos
 			raise ParseError('Expected condition for do-while statement')
@@ -335,12 +335,12 @@ def parse_block(walker: Walker, current_indent: int) -> List[Statement]:
 	return block
 
 
-def parse_expression(walker: Walker) -> Expr:
-	return _parse_or_expression(walker)
+def parse_expr(walker: Walker) -> Expr:
+	return _parse_or_expr(walker)
 
 
-def _parse_or_expression(walker: Walker) -> Expr:
-	expression = _parse_xor_expression(walker)
+def _parse_or_expr(walker: Walker) -> Expr:
+	expr = _parse_xor_expr(walker)
 
 	while True:
 		pos = walker.pos
@@ -355,13 +355,13 @@ def _parse_or_expression(walker: Walker) -> Expr:
 		operator = Token(walker, pos, walker.pos - pos)
 
 		walker.match(is_whitespace)
-		expression = BinaryExpr(expression, operator, _parse_xor_expression(walker))
+		expr = BinaryExpr(expr, operator, _parse_xor_expr(walker))
 
-	return expression
+	return expr
 
 
-def _parse_xor_expression(walker: Walker) -> Expr:
-	expression = _parse_and_expression(walker)
+def _parse_xor_expr(walker: Walker) -> Expr:
+	expr = _parse_and_expr(walker)
 
 	while True:
 		pos = walker.pos
@@ -376,13 +376,13 @@ def _parse_xor_expression(walker: Walker) -> Expr:
 		operator = Token(walker, pos, walker.pos - pos)
 
 		walker.match(is_whitespace)
-		expression = BinaryExpr(expression, operator, _parse_and_expression(walker))
+		expr = BinaryExpr(expr, operator, _parse_and_expr(walker))
 
-	return expression
+	return expr
 
 
-def _parse_and_expression(walker: Walker) -> Expr:
-	expression = _parse_equality_expression(walker)
+def _parse_and_expr(walker: Walker) -> Expr:
+	expr = _parse_equality_expr(walker)
 
 	while True:
 		pos = walker.pos
@@ -397,13 +397,13 @@ def _parse_and_expression(walker: Walker) -> Expr:
 		operator = Token(walker, pos, walker.pos - pos)
 
 		walker.match(is_whitespace)
-		expression = BinaryExpr(expression, operator, _parse_equality_expression(walker))
+		expr = BinaryExpr(expr, operator, _parse_equality_expr(walker))
 
-	return expression
+	return expr
 
 
-def _parse_equality_expression(walker: Walker) -> Expr:
-	expression = _parse_relational_expression(walker)
+def _parse_equality_expr(walker: Walker) -> Expr:
+	expr = _parse_relational_expr(walker)
 
 	while True:
 		pos = walker.pos
@@ -418,13 +418,13 @@ def _parse_equality_expression(walker: Walker) -> Expr:
 		operator = Token(walker, pos, walker.pos - pos)
 
 		walker.match(is_whitespace)
-		expression = BinaryExpr(expression, operator, _parse_relational_expression(walker))
+		expr = BinaryExpr(expr, operator, _parse_relational_expr(walker))
 
-	return expression
+	return expr
 
 
-def _parse_relational_expression(walker: Walker) -> Expr:
-	expression = _parse_additive_expression(walker)
+def _parse_relational_expr(walker: Walker) -> Expr:
+	expr = _parse_additive_expr(walker)
 
 	while True:
 		pos = walker.pos
@@ -441,13 +441,13 @@ def _parse_relational_expression(walker: Walker) -> Expr:
 		operator = Token(walker, pos, walker.pos - pos)
 
 		walker.match(is_whitespace)
-		expression = BinaryExpr(expression, operator, _parse_additive_expression(walker))
+		expr = BinaryExpr(expr, operator, _parse_additive_expr(walker))
 
-	return expression
+	return expr
 
 
-def _parse_additive_expression(walker: Walker) -> Expr:
-	expression = _parse_multiplicative_expression(walker)
+def _parse_additive_expr(walker: Walker) -> Expr:
+	expr = _parse_multiplicative_expr(walker)
 
 	while True:
 		pos = walker.pos
@@ -462,13 +462,13 @@ def _parse_additive_expression(walker: Walker) -> Expr:
 		operator = Token(walker, pos, walker.pos - pos)
 
 		walker.match(is_whitespace)
-		expression = BinaryExpr(expression, operator, _parse_multiplicative_expression(walker))
+		expr = BinaryExpr(expr, operator, _parse_multiplicative_expr(walker))
 
-	return expression
+	return expr
 
 
-def _parse_multiplicative_expression(walker: Walker) -> Expr:
-	expression = _parse_primary_expression(walker)
+def _parse_multiplicative_expr(walker: Walker) -> Expr:
+	expr = _parse_primary_expr(walker)
 
 	while True:
 		pos = walker.pos
@@ -483,12 +483,12 @@ def _parse_multiplicative_expression(walker: Walker) -> Expr:
 		operator = Token(walker, pos, walker.pos - pos)
 
 		walker.match(is_whitespace)
-		expression = BinaryExpr(expression, operator, _parse_primary_expression(walker))
+		expr = BinaryExpr(expr, operator, _parse_primary_expr(walker))
 
-	return expression
+	return expr
 
 
-def _parse_primary_expression(walker: Walker) -> Expr:
+def _parse_primary_expr(walker: Walker) -> Expr:
 	ahead2 = walker.ahead(2)
 	ahead = ahead2[:1]
 	ahead2 = ahead2[1:2]
@@ -502,13 +502,13 @@ def _parse_primary_expression(walker: Walker) -> Expr:
 		walker.advance()
 		operator = Token(walker, pos, walker.pos - pos)
 		walker.match(is_whitespace)
-		return UnaryExpr(operator, parse_expression(walker))
+		return UnaryExpr(operator, parse_expr(walker))
 
 	# If we got a '(', we have a parenthesised expression
 	if ahead == '(':
 		walker.advance()
 		walker.match(is_whitespace)
-		result = parse_expression(walker)
+		result = parse_expr(walker)
 		walker.match(is_whitespace)
 		if walker.advance() != ')':
 			walker.retreat()
@@ -547,45 +547,45 @@ def _parse_primary_expression(walker: Walker) -> Expr:
 	walker.match(is_whitespace)
 
 	if walker.ahead() == '(':
-		return _parse_function_call(walker)
+		return _parse_func_call(walker)
 	else:
 		walker.pos = pos
 		return IdentifierExpr(identifier)
 
 
-def _parse_function_call(walker: Walker) -> FuncCall:
+def _parse_func_call(walker: Walker) -> FuncCall:
 	identifier = _parse_identifier(walker)
 	if len(identifier) == 0:
 		raise ParseError('Invalid function name')
 
 	walker.match(is_whitespace)
 
-	return FuncCall(identifier, _parse_arguments(walker))
+	return FuncCall(identifier, _parse_args(walker))
 
 
-def _parse_arguments(walker: Walker) -> List[FuncCall.Arg]:
+def _parse_args(walker: Walker) -> List[FuncCall.Arg]:
 	if walker.match('(') is None:
 		raise ParseError("Expected '('")
 
-	arguments: List[FuncCall.Arg] = []
+	args: List[FuncCall.Arg] = []
 
 	while True:
 		walker.match(is_whitespace)
 
 		if walker.match(')') is not None:
 			break
-		elif walker.match(',') is not None and len(arguments) > 0:
+		elif walker.match(',') is not None and len(args) > 0:
 			walker.match(is_whitespace)
 
 		if walker.match('ref') is not None and len(walker.match(is_whitespace) or '') > 0:
 			pos = walker.pos
 			if len(_parse_identifier(walker)) == 0:
 				raise ParseError('Illegal identifier')
-			arguments += [FuncCall.Arg(IdentifierExpr(Token(walker, pos, walker.pos - pos)), True)]
+			args += [FuncCall.Arg(IdentifierExpr(Token(walker, pos, walker.pos - pos)), True)]
 		else:
-			arguments += [FuncCall.Arg(parse_expression(walker), False)]
+			args += [FuncCall.Arg(parse_expr(walker), False)]
 
-	return arguments
+	return args
 
 
 def _parse_indent(walker: Walker) -> int:
