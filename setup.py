@@ -5,7 +5,7 @@ from setuptools import find_packages, setup
 
 setup(
 	name = 'craftlangc',
-	version = '0.1.0',
+	version = '0.2.0',
 	description = 'The compiler for the CraftLang programming language',
 	author = 'Matteo Morena',
 	keywords = 'craftlang compiler minecraft dsl mcfunction datapack',

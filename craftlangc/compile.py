@@ -16,6 +16,41 @@ from craftlangc.scope import Scope
 
 
 def compile_file(file: File, out_dir: str) -> None:
+	nc = file.namespace_decl.components
+
+	makedirs(out_dir, exist_ok = True)
+	with open(join(out_dir, 'pack.mcmeta'), 'wt', encoding = 'UTF-8', newline = '') as out:
+		out.write(
+			'{\r\n'
+			'\t"pack": {\r\n'
+			'\t\t"pack_format": 4,\r\n'
+			'\t\t"description": ""\r\n'
+			'\t}\r\n'
+			'}'
+		)
+
+	f = join(
+		out_dir, "data", _asciify(str(nc[0])), "functions", *map(lambda c: _asciify(str(c)), islice(nc, 1, None)),
+		'.load.mcfunction'
+	)
+	makedirs(dirname(f), exist_ok = True)
+	with open(f, 'wt', encoding = 'UTF-8', newline = '') as out:
+		out.write(
+			'gamerule maxCommandChainLength 2147483647\r\n'
+			'scoreboard objectives add craflang dummy'
+		)
+
+	f = join(out_dir, 'data', 'minecraft', 'tags', 'functions', 'load.json')
+	makedirs(dirname(f), exist_ok = True)
+	with open(f, 'wt', encoding = 'UTF-8', newline = '') as out:
+		out.write(
+			'{\r\n'
+			'\t"values": [\r\n'
+			f'\t\t"{_asciify(str(nc[0]))}:{"/".join(map(lambda c: _asciify(str(c)), islice(nc, 1, None)))}/.load"\r\n'
+			'\t]\r\n'
+			'}'
+		)
+
 	for func_def in file.func_defs:
 		compile_func_def(file, func_def, out_dir)
 
