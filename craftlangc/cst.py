@@ -7,7 +7,7 @@ __all__ = (
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import List
+from typing import List, Union
 
 from craftlangc.enums import VarType
 from craftlangc.walker import Walker
@@ -75,10 +75,19 @@ class NopStatement(Statement):
 
 @dataclass
 class CommandStatement(Statement):
-	command: 'Token'
+	components: List[Union['Token', 'Arg']]
+
+	@classmethod
+	def _component_to_str(cls, component: Union['Token', 'Arg']) -> str:
+		if isinstance(component, Token):
+			return str(component)
+		elif isinstance(component, Arg):
+			return f'$({component})'
+		else:
+			raise Exception()  # TODO
 
 	def _to_str(self, indent: int) -> str:
-		return '\t' * indent + f'/{self.command}'
+		return '\t' * indent + f'/{"".join(map(lambda c: self._component_to_str(c), self.components))}'
 
 	def __str__(self) -> str:
 		return self._to_str(0)
@@ -231,13 +240,14 @@ class FuncCall(Statement, Expr):
 	def __str__(self) -> str:
 		return f'{self.identifier}({", ".join(map(str, self.args))})'
 
-	@dataclass
-	class Arg:
-		expr: 'Expr'
-		by_ref: bool
 
-		def __str__(self) -> str:
-			return f'{"ref " if self.by_ref else ""}{self.expr}'
+@dataclass
+class Arg:
+	expr: 'Expr'
+	by_ref: bool
+
+	def __str__(self) -> str:
+		return f'{"ref " if self.by_ref else ""}{self.expr}'
 
 
 @dataclass

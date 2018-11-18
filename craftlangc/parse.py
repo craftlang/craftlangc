@@ -17,12 +17,12 @@ All functions follow the following conventions:
 __author__ = 'Matteo Morena'
 __all__ = ('parse_file', 'parse_statement', 'parse_block', 'parse_expr', 'ParseError')
 
-from typing import List
+from typing import List, Union
 
 from craftlangc.character import is_digit, is_identifier_continue, is_identifier_start, is_newline, is_whitespace
-from craftlangc.cst import AssignStatement, BinaryExpr, CommandStatement, DoWhileStatement, Expr, File, FuncCall, \
-	FuncDef, IdentifierExpr, IfStatement, LiteralExpr, NamespaceDecl, NopStatement, ParensExpr, ReturnStatement, \
-	Statement, SwapStatement, Token, UnaryExpr, WhileStatement
+from craftlangc.cst import Arg, AssignStatement, BinaryExpr, CommandStatement, DoWhileStatement, Expr, File, \
+	FuncCall, FuncDef, IdentifierExpr, IfStatement, LiteralExpr, NamespaceDecl, NopStatement, ParensExpr, \
+	ReturnStatement, Statement, SwapStatement, Token, UnaryExpr, WhileStatement
 from craftlangc.enums import VarType
 from craftlangc.walker import Walker
 
@@ -140,9 +140,33 @@ def _parse_func_def(walker: Walker) -> FuncDef:
 def parse_statement(walker: Walker, current_indent: int) -> Statement:
 	# If ``/`` is ahead, we know we have a command
 	if walker.match('/') is not None:
-		pos = walker.pos
-		walker.match(lambda c: not is_newline(c) and c != '')
-		return CommandStatement(Token(walker, pos, walker.pos - pos))
+		components: List[Union[Token, Arg]] = []
+
+		while True:
+			ahead = walker.ahead()
+			if is_newline(ahead) or ahead == '':
+				break
+
+			pos = walker.pos
+			walker.advance()
+
+			if ahead + walker.ahead() == '$(':
+				walker.advance()
+				walker.match(is_whitespace)
+				components += [_parse_arg(walker)]
+				walker.match(is_whitespace)
+
+				if walker.advance() != ')':
+					walker.retreat()
+					raise ParseError("Expected ')'")
+
+			else:
+				if len(components) > 0 and isinstance(components[len(components) - 1], Token):
+					components[len(components) - 1].len += 1
+				else:
+					components += [Token(walker, pos, walker.pos - pos)]
+
+		return CommandStatement(components)
 
 	# Otherwise, all other statements start with an identifier (which might be a keyword)
 	initial_pos = walker.pos
@@ -572,11 +596,11 @@ def _parse_func_call(walker: Walker) -> FuncCall:
 	return FuncCall(identifier, _parse_args(walker))
 
 
-def _parse_args(walker: Walker) -> List[FuncCall.Arg]:
+def _parse_args(walker: Walker) -> List[Arg]:
 	if walker.match('(') is None:
 		raise ParseError("Expected '('")
 
-	args: List[FuncCall.Arg] = []
+	args: List[Arg] = []
 
 	while True:
 		walker.match(is_whitespace)
@@ -586,15 +610,22 @@ def _parse_args(walker: Walker) -> List[FuncCall.Arg]:
 		elif walker.match(',') is not None and len(args) > 0:
 			walker.match(is_whitespace)
 
-		if walker.match('ref') is not None and len(walker.match(is_whitespace) or '') > 0:
-			pos = walker.pos
-			if len(_parse_identifier(walker)) == 0:
-				raise ParseError('Illegal identifier')
-			args += [FuncCall.Arg(IdentifierExpr(Token(walker, pos, walker.pos - pos)), True)]
-		else:
-			args += [FuncCall.Arg(parse_expr(walker), False)]
+		args += [_parse_arg(walker)]
 
 	return args
+
+
+def _parse_arg(walker: Walker) -> Arg:
+	pos = walker.pos
+
+	if walker.match('ref') is not None and len(walker.match(is_whitespace) or '') > 0:
+		pos = walker.pos
+		if len(_parse_identifier(walker)) == 0:
+			raise ParseError('Illegal identifier')
+		return Arg(IdentifierExpr(Token(walker, pos, walker.pos - pos)), True)
+	else:
+		walker.pos = pos
+		return Arg(parse_expr(walker), False)
 
 
 def _parse_indent(walker: Walker) -> int:

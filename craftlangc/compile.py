@@ -8,9 +8,9 @@ from os.path import dirname, join
 from typing import Iterator, List, TextIO
 from unicodedata import normalize
 
-from craftlangc.cst import AssignStatement, BinaryExpr, CommandStatement, DoWhileStatement, Expr, File, FuncCall, \
+from craftlangc.cst import Arg, AssignStatement, BinaryExpr, CommandStatement, DoWhileStatement, Expr, File, FuncCall, \
 	FuncDef, IdentifierExpr, IfStatement, LiteralExpr, NopStatement, ParensExpr, ReturnStatement, Statement, \
-	SwapStatement, UnaryExpr, WhileStatement
+	SwapStatement, Token, UnaryExpr, WhileStatement
 from craftlangc.enums import VarType
 from craftlangc.scope import Scope
 
@@ -128,7 +128,24 @@ def compile_statement(
 
 	elif isinstance(statement, CommandStatement):
 		out.write(f'# {statement}\r\n')
-		out.write(f'{statement.command}\r\n')
+
+		for component in reversed(statement.components):
+			if isinstance(component, Arg):
+				compile_expr(file, component.expr, out, scope, stack)
+
+		for component in statement.components:
+			if isinstance(component, Token):
+				out.write(str(component))
+			elif isinstance(component, Arg):
+				if component.by_ref:
+					out.write(_scope_get(scope, str(component.expr)).iid)
+				else:
+					stack.pop()
+					out.write(f'stack.{len(stack)}')
+			else:
+				raise Exception()  # TODO
+
+		out.write('\r\n')
 
 	elif isinstance(statement, SwapStatement):
 		out.write(f'# {statement}\r\n')
