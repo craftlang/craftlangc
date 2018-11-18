@@ -222,9 +222,9 @@ def parse_statement(walker: Walker, current_indent: int) -> Statement:
 		if is_call_statement:
 			return FuncCall(identifier, arguments)
 
-	# None of the conditions above have been fulfilled. At this point, if/while/do-while statements are still an option.
-	# However, since we moved our walker around in the code above, we reset its position to the position after the
-	# identifier.
+	# None of the conditions above have been fulfilled. At this point, if/while/do-while statements are still an
+	# option. However, since we moved our walker around in the code above, we reset its position to the position after
+	# the identifier.
 	walker.pos = pos
 
 	# If the identifier is 'while', we have a return statement

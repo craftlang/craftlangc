@@ -1,8 +1,8 @@
 __author__ = 'Matteo Morena'
 __all__ = (
 	'File', 'NamespaceDecl', 'FuncDef', 'Statement', 'NopStatement', 'CommandStatement', 'AssignStatement',
-	'SwapStatement', 'ReturnStatement', 'IfStatement', 'WhileStatement', 'DoWhileStatement', 'Expr',
-	'ParensExpr', 'UnaryExpr', 'BinaryExpr', 'IdentifierExpr', 'LiteralExpr', 'FuncCall', 'Token'
+	'SwapStatement', 'ReturnStatement', 'IfStatement', 'WhileStatement', 'DoWhileStatement', 'Expr', 'ParensExpr',
+	'UnaryExpr', 'BinaryExpr', 'IdentifierExpr', 'LiteralExpr', 'FuncCall', 'Token'
 )
 
 from abc import ABC, abstractmethod

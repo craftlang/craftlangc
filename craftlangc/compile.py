@@ -222,7 +222,7 @@ def compile_statement(
 				out.write(
 					f'scoreboard players operation {item.iid} craftlang += stack.{len(stack)} craftlang\r\n'
 					f'execute if score {item.iid} craftlang matches 1 run scoreboard players set {item.iid} craftlang'
-					f' 0\r\n'
+					' 0\r\n'
 				)
 			elif item.type == VarType.ENTITY and type == VarType.ENTITY:
 				out.write(f'tag @e[tag={item.iid},tag=!stack.{len(stack)}] remove {item.iid}\r\n')
@@ -235,7 +235,7 @@ def compile_statement(
 				out.write(
 					f'scoreboard players operation {item.iid} craftlang += stack.{len(stack)} craftlang\r\n'
 					f'execute if score {item.iid} craftlang matches 2 run scoreboard players set {item.iid} craftlang'
-					f' 0\r\n'
+					' 0\r\n'
 				)
 			elif item.type == VarType.ENTITY and type == VarType.ENTITY:
 				out.write(
@@ -253,7 +253,7 @@ def compile_statement(
 				out.write(
 					f'scoreboard players operation {item.iid} craftlang += stack.{len(stack)} craftlang\r\n'
 					f'execute if score {item.iid} craftlang matches 2 run scoreboard players set {item.iid} craftlang'
-					f' 1\r\n'
+					' 1\r\n'
 				)
 			elif item.type == VarType.ENTITY and type == VarType.ENTITY:
 				out.write(f'tag @e[tag=stack.{len(stack)}] add {item.iid}\r\n')
@@ -317,7 +317,7 @@ def compile_statement(
 				o.write(f'execute if score stack.{len(stack)} craftlang matches 1 run function {aux.id}\r\n')
 
 	elif isinstance(statement, DoWhileStatement):
-		out.write(f'# do\r\n')
+		out.write('# do\r\n')
 
 		if len(statement.statements) > 0:
 			aux = next(aux_gen)
@@ -422,7 +422,8 @@ def compile_expr(file: File, expr: Expr, out: TextIO, scope: Scope, stack: List[
 			if type == VarType.SCORE:
 				out.write(
 					f'scoreboard players set stack.{len(stack)} craftlang -1\r\n'
-					f'scoreboard players operation stack.{len(stack) - 1} craftlang *= stack.{len(stack)} craftlang\r\n'
+					f'scoreboard players operation stack.{len(stack) - 1} craftlang *= stack.{len(stack)}'
+					' craftlang\r\n'
 				)
 			else:
 				raise Exception()  # TODO
@@ -440,7 +441,8 @@ def compile_expr(file: File, expr: Expr, out: TextIO, scope: Scope, stack: List[
 		if operator == '*':
 			if left_type == VarType.SCORE and right_type == VarType.SCORE:
 				out.write(
-					f'scoreboard players operation stack.{len(stack)} craftlang *= stack.{len(stack) + 1} craftlang\r\n'
+					f'scoreboard players operation stack.{len(stack)} craftlang *= stack.{len(stack) + 1}'
+					' craftlang\r\n'
 				)
 				stack += [VarType.SCORE]
 			else:
@@ -449,7 +451,8 @@ def compile_expr(file: File, expr: Expr, out: TextIO, scope: Scope, stack: List[
 		elif operator == '/':
 			if left_type == VarType.SCORE and right_type == VarType.SCORE:
 				out.write(
-					f'scoreboard players operation stack.{len(stack)} craftlang /= stack.{len(stack) + 1} craftlang\r\n'
+					f'scoreboard players operation stack.{len(stack)} craftlang /= stack.{len(stack) + 1}'
+					' craftlang\r\n'
 				)
 				stack += [VarType.SCORE]
 			else:
@@ -458,7 +461,8 @@ def compile_expr(file: File, expr: Expr, out: TextIO, scope: Scope, stack: List[
 		elif operator == '%':
 			if left_type == VarType.SCORE and right_type == VarType.SCORE:
 				out.write(
-					f'scoreboard players operation stack.{len(stack)} craftlang %= stack.{len(stack) + 1} craftlang\r\n'
+					f'scoreboard players operation stack.{len(stack)} craftlang %= stack.{len(stack) + 1}'
+					' craftlang\r\n'
 				)
 				stack += [VarType.SCORE]
 			else:
@@ -467,7 +471,8 @@ def compile_expr(file: File, expr: Expr, out: TextIO, scope: Scope, stack: List[
 		elif operator == '+':
 			if left_type == VarType.SCORE and right_type == VarType.SCORE:
 				out.write(
-					f'scoreboard players operation stack.{len(stack)} craftlang += stack.{len(stack) + 1} craftlang\r\n'
+					f'scoreboard players operation stack.{len(stack)} craftlang += stack.{len(stack) + 1}'
+					' craftlang\r\n'
 				)
 				stack += [VarType.SCORE]
 			else:
@@ -476,7 +481,8 @@ def compile_expr(file: File, expr: Expr, out: TextIO, scope: Scope, stack: List[
 		elif operator == '-':
 			if left_type == VarType.SCORE and right_type == VarType.SCORE:
 				out.write(
-					f'scoreboard players operation stack.{len(stack)} craftlang -= stack.{len(stack) + 1} craftlang\r\n'
+					f'scoreboard players operation stack.{len(stack)} craftlang -= stack.{len(stack) + 1}'
+					' craftlang\r\n'
 				)
 				stack += [VarType.SCORE]
 			elif left_type == VarType.ENTITY and right_type == VarType.ENTITY:
@@ -592,7 +598,8 @@ def compile_expr(file: File, expr: Expr, out: TextIO, scope: Scope, stack: List[
 		elif operator == '&':
 			if left_type == VarType.BOOLEAN and right_type == VarType.BOOLEAN:
 				out.write(
-					f'scoreboard players operation stack.{len(stack)} craftlang += stack.{len(stack) + 1} craftlang\r\n'
+					f'scoreboard players operation stack.{len(stack)} craftlang += stack.{len(stack) + 1}'
+					' craftlang\r\n'
 					f'execute if score stack.{len(stack)} craftlang matches 1 run scoreboard players set'
 					f' stack.{len(stack)} craftlang 0\r\n'
 				)
@@ -608,7 +615,8 @@ def compile_expr(file: File, expr: Expr, out: TextIO, scope: Scope, stack: List[
 		elif operator == '^':
 			if left_type == VarType.BOOLEAN and right_type == VarType.BOOLEAN:
 				out.write(
-					f'scoreboard players operation stack.{len(stack)} craftlang += stack.{len(stack) + 1} craftlang\r\n'
+					f'scoreboard players operation stack.{len(stack)} craftlang += stack.{len(stack) + 1}'
+					' craftlang\r\n'
 					f'execute if score stack.{len(stack)} craftlang matches 2 run scoreboard players set'
 					f' stack.{len(stack)} craftlang 0\r\n'
 				)
@@ -627,7 +635,8 @@ def compile_expr(file: File, expr: Expr, out: TextIO, scope: Scope, stack: List[
 		elif operator == '|':
 			if left_type == VarType.BOOLEAN and right_type == VarType.BOOLEAN:
 				out.write(
-					f'scoreboard players operation stack.{len(stack)} craftlang += stack.{len(stack) + 1} craftlang\r\n'
+					f'scoreboard players operation stack.{len(stack)} craftlang += stack.{len(stack) + 1}'
+					' craftlang\r\n'
 					f'execute if score stack.{len(stack)} craftlang matches 2 run scoreboard players set'
 					f' stack.{len(stack)} craftlang 1\r\n'
 				)
@@ -697,14 +706,13 @@ def _compile_function_call(file: File, func_call: FuncCall, out: TextIO, scope: 
 				out.write(
 					f'scoreboard players operation {id} craftlang ='
 					f' args.{".".join(map(lambda c: _asciify(str(c)), nc))}.{_asciify(str(func_call.identifier))}.{i}'
-					f' craftlang\r\n'
+					' craftlang\r\n'
 				)
 			elif type == VarType.ENTITY:
 				out.write(
 					f'tag @e remove {id}\r\n'
-					f'tag'
-					f' @e[tag=args.{".".join(map(lambda c: _asciify(str(c)), nc))}.{_asciify(str(func_call.identifier))}'
-					f'.{i}] add {id}\r\n'
+					f'tag @e[tag=args.{".".join(map(lambda c: _asciify(str(c)), nc))}'
+					f'.{_asciify(str(func_call.identifier))}.{i}] add {id}\r\n'
 				)
 			else:
 				raise Exception()  # TODO
