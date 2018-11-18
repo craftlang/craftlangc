@@ -26,7 +26,7 @@ def compile_file(file: File, out_dir: str) -> None:
 			'\t\t"pack_format": 4,\r\n'
 			'\t\t"description": ""\r\n'
 			'\t}\r\n'
-			'}'
+			'}\r\n'
 		)
 
 	f = join(
@@ -37,7 +37,7 @@ def compile_file(file: File, out_dir: str) -> None:
 	with open(f, 'wt', encoding = 'UTF-8', newline = '') as out:
 		out.write(
 			'gamerule maxCommandChainLength 2147483647\r\n'
-			'scoreboard objectives add craflang dummy'
+			'scoreboard objectives add craflang dummy\r\n'
 		)
 
 	f = join(out_dir, 'data', 'minecraft', 'tags', 'functions', 'load.json')
@@ -48,7 +48,7 @@ def compile_file(file: File, out_dir: str) -> None:
 			'\t"values": [\r\n'
 			f'\t\t"{_asciify(str(nc[0]))}:{"/".join(map(lambda c: _asciify(str(c)), islice(nc, 1, None)))}/.load"\r\n'
 			'\t]\r\n'
-			'}'
+			'}\r\n'
 		)
 
 	for func_def in file.func_defs:
@@ -115,11 +115,6 @@ def compile_func_def(file: File, func_def: FuncDef, out_dir: str) -> None:
 				f'.{_asciify(str(func_def.identifier))}.0',
 				VarType.from_str(str(func_def.return_type))
 			)
-
-		try:
-			out.truncate(out.tell() - 2)
-		except:
-			pass
 
 
 def compile_statement(
