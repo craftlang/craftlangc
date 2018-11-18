@@ -580,7 +580,7 @@ def _parse_primary_expr(walker: Walker) -> Expr:
 	walker.match(is_whitespace)
 
 	if walker.ahead() == '(':
-		return _parse_func_call(walker)
+		return FuncCall(identifier, _parse_args(walker))
 	else:
 		walker.pos = pos
 		return IdentifierExpr(identifier)

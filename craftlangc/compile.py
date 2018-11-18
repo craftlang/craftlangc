@@ -46,7 +46,9 @@ def compile_file(file: File, out_dir: str) -> None:
 		out.write(
 			'{\r\n'
 			'\t"values": [\r\n'
-			f'\t\t"{_asciify(str(nc[0]))}:{"/".join(map(lambda c: _asciify(str(c)), islice(nc, 1, None)))}/.load"\r\n'
+			'\t\t"'
+			f'{_asciify(str(nc[0]))}:{"/".join([*map(lambda c: _asciify(str(c)), islice(nc, 1, None)), ".load"])}'
+			'"\r\n'
 			'\t]\r\n'
 			'}\r\n'
 		)
@@ -131,7 +133,7 @@ def compile_statement(
 		out.write(f'# {statement}\r\n')
 
 		for component in reversed(statement.components):
-			if isinstance(component, Arg):
+			if isinstance(component, Arg) and not component.by_ref:
 				compile_expr(file, component.expr, out, scope, stack)
 
 		for component in statement.components:
@@ -298,6 +300,7 @@ def compile_statement(
 
 			with aux.out as o:
 				for s in statement.if_true:
+					o.write('\r\n')
 					compile_statement(file, s, o, aux_gen, scope, iid_gen, ret, ret_type)
 
 		if len(statement.if_false) > 0:
@@ -306,6 +309,7 @@ def compile_statement(
 
 			with aux.out as o:
 				for s in statement.if_false:
+					o.write('\r\n')
 					compile_statement(file, s, o, aux_gen, scope, iid_gen, ret, ret_type)
 
 	elif isinstance(statement, WhileStatement):
@@ -321,6 +325,7 @@ def compile_statement(
 
 			with aux.out as o:
 				for s in statement.statements:
+					o.write('\r\n')
 					compile_statement(file, s, o, aux_gen, scope, iid_gen, ret, ret_type)
 
 				compile_expr(file, statement.condition, o, scope, stack)
@@ -338,6 +343,7 @@ def compile_statement(
 
 			with aux.out as o:
 				for s in statement.statements:
+					o.write('\r\n')
 					compile_statement(file, s, o, aux_gen, scope, iid_gen, ret, ret_type)
 
 				compile_expr(file, statement.condition, o, scope, stack)
@@ -349,6 +355,7 @@ def compile_statement(
 	elif isinstance(statement, FuncCall):
 		out.write(f'# {statement}\r\n')
 		_compile_function_call(file, statement, out, scope, stack)
+		stack.pop()
 
 	else:
 		raise Exception()  # TODO
@@ -684,8 +691,8 @@ def _compile_function_call(file: File, func_call: FuncCall, out: TextIO, scope: 
 			type = item.type
 		else:
 			compile_expr(file, arg.expr, out, scope, stack)
-			id = f'stack.{len(stack)}'
 			type = stack.pop()
+			id = f'stack.{len(stack)}'
 
 		if type != VarType.from_str(str(func_def.params[i].type)):
 			raise Exception()  # TODO
@@ -693,8 +700,7 @@ def _compile_function_call(file: File, func_call: FuncCall, out: TextIO, scope: 
 		if type == VarType.BOOLEAN or type == VarType.SCORE:
 			out.write(
 				f'scoreboard players operation args.{".".join(map(lambda c: _asciify(str(c)), nc))}'
-				f'.{_asciify(str(func_call.identifier))}.{i} craftlang ='
-				f' {id} craftlang\r\n'
+				f'.{_asciify(str(func_call.identifier))}.{i} craftlang = {id} craftlang\r\n'
 			)
 		elif type == VarType.ENTITY:
 			t = f'args.{".".join(map(lambda c: _asciify(str(c)), nc))}.{_asciify(str(func_call.identifier))}.{i}'
@@ -708,6 +714,23 @@ def _compile_function_call(file: File, func_call: FuncCall, out: TextIO, scope: 
 	out.write(f'''function {nc[0]}:{"/".join(
 		chain(map(lambda c: _asciify(str(c)), islice(nc, 1, None)), [str(func_call.identifier)])
 	)}\r\n''')
+
+	ret_type = VarType.from_str(str(func_def.return_type))
+	r = (
+		f'rets.{".".join(map(lambda c: _asciify(str(c)), file.namespace_decl.components))}'
+		f'.{_asciify(str(func_def.identifier))}.0'
+	)
+	if ret_type == VarType.VOID:
+		pass
+	elif ret_type == VarType.BOOLEAN or ret_type == VarType.SCORE:
+		out.write(f'scoreboard players operation stack.{len(stack)} craftlang = {r} craftlang\r\n')
+	elif ret_type == VarType.ENTITY:
+		out.write(f'tag @e remove stack.{len(stack)}')
+		out.write(f'tag @e[tag={r}] add stack.{len(stack)}\r\n')
+	else:
+		raise Exception()  # TODO
+	if ret_type != VarType.VOID:
+		stack += [ret_type]
 
 	for i, arg in enumerate(func_call.args):
 		if arg.by_ref:
