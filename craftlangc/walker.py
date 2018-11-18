@@ -109,11 +109,11 @@ class Walker:
 
 	def ahead(self, count: int = 1) -> str:
 		'''
-		Starting at the current cursor position, looks ahead count characters and returns them as result
+		Starting at the current cursor position, looks ahead ``count`` characters and returns them as result
 
-		The length of the returned string might be shorter than count characters if an EOF is encountered.
-		If count is negative, calling this method is equivalent to calling behind(-count).
-		This method has no side effects.
+		The length of the returned string might be shorter than ``count`` characters if an EOF is encountered.  If
+		``count`` is negative, calling this method is equivalent to calling ``behind(-count)``.  This method has no
+		side effects.
 		'''
 
 		if count < 0:
@@ -123,11 +123,11 @@ class Walker:
 
 	def behind(self, count: int = 1) -> str:
 		'''
-		Starting at the current cursor position, looks behind count characters and returns them as result
+		Starting at the current cursor position, looks behind ``count`` characters and returns them as result
 
-		The length of the returned string might be shorter than count characters if an EOF is encountered.
-		If count is negative, calling this method is equivalent to calling ahead(-count).
-		This method has no side effects.
+		The length of the returned string might be shorter than ``count`` characters if an EOF is encountered.  If
+		``count`` is negative, calling this method is equivalent to calling ``ahead(-count)``.  This method has no side
+		effects.
 		'''
 
 		if count < 0:
@@ -137,10 +137,10 @@ class Walker:
 
 	def advance(self, count: int = 1) -> str:
 		'''
-		Advances the cursor by count characters and returns a string containing the traversed characters
+		Advances the cursor by ``count`` characters and returns a string containing the traversed characters
 
-		The cursor might advance by less than count characters if an EOF is encountered.
-		If count is negative, calling this method is equivalent to calling retreat(-count).
+		The cursor might advance by less than ``count`` characters if an EOF is encountered.  If ``count`` is negative,
+		calling this method is equivalent to calling ``retreat(-count)``.
 		'''
 
 		if count < 0:
@@ -152,10 +152,10 @@ class Walker:
 
 	def retreat(self, count: int = 1) -> str:
 		'''
-		Retreats the cursor by count characters and returns a string containing the traversed characters
+		Retreats the cursor by ``count`` characters and returns a string containing the traversed characters
 
-		The cursor might retreat by less than count characters if an EOF is encountered.
-		If count is negative, calling this method is equivalent to calling advance(-count).
+		The cursor might retreat by less than ``count`` characters if an EOF is encountered.  If ``count`` is negative,
+		calling this method is equivalent to calling ``advance(-count)``.
 		'''
 
 		if count < 0:
@@ -181,25 +181,31 @@ class Walker:
 		'''
 		Advances the cursor, trying to find and return a matching string
 
-		If match is a string, advances the cursor, this method tries to match the selected string. If no match has been
-		found, the cursor position doesn't change and None is returned.
+		If ``match`` is a string, advances the cursor, this method tries to match the selected string.  If no match has
+		been found, the cursor position doesn't change and ``None`` is returned.
 
-		If match is a function accepting a string and returning an optional boolean value, this method traverses the
-		source, starting at the cursor; the match function will be called for any traversed character.
-		 * if match(character) == True, the traversal continues;
-		 * if match(character) == False, the traversal ends and the string containing the traversed characters is
-		   returned;
-		 * if match(character) == None, the traversal is canceled and the cursor position is reset to where it was
-		   before. None is returned.
+		If ``match`` is a function accepting a string and returning an optional boolean value, this method traverses
+		the source, starting at the cursor; the ``match`` function will be called for any traversed character:
 
-		If match is a function accepting a string and an integer and returning an optional boolean value, this method
-		traverses the source, starting at the cursor; the match function will be called for any traversed character.
-		 * if match(offset, character) == True, the traversal continues;
-		 * if match(offset, character) == False, the traversal ends and the
-		   string containing the traversed characters is returned;
-		 * if match(offset, character) == None, the traversal is canceled and
-		   the cursor position is reset to where it was before. None is
-		   returned.
+		* If ``match(character) == True``, the traversal continues;
+
+		* If ``match(character) == False``, the traversal ends and the string containing the traversed characters is
+		  returned;
+
+		* If ``match(character) == None``, the traversal is canceled and the cursor position is reset to where it was
+		  before.  ``None`` is returned.
+
+		If ``match`` is a function accepting a string and an integer and returning an optional boolean value, this
+		method traverses the source, starting at the cursor; the ``match`` function will be called for any traversed
+		character:
+
+		* if match(offset, character) == True, the traversal continues;
+
+		* if match(offset, character) == False, the traversal ends and the string containing the traversed characters
+		  is returned;
+
+		* if match(offset, character) == None, the traversal is canceled and the cursor position is reset to where it
+		  was before.  ``None`` is returned.
 		'''
 
 		initial_pos = self.pos
