@@ -37,7 +37,7 @@ def compile_file(file: File, out_dir: str) -> None:
 	with open(f, 'wt', encoding = 'UTF-8', newline = '') as out:
 		out.write(
 			'gamerule maxCommandChainLength 2147483647\r\n'
-			'scoreboard objectives add craflang dummy\r\n'
+			'scoreboard objectives add craftlang dummy\r\n'
 		)
 
 	f = join(out_dir, 'data', 'minecraft', 'tags', 'functions', 'load.json')
@@ -316,7 +316,7 @@ def compile_statement(
 
 		if len(statement.statements) > 0:
 			aux = next(aux_gen)
-			out.write(f'execute if score stack.{len(stack)} craftlang matches 0 run function {aux.id}\r\n')
+			out.write(f'execute if score stack.{len(stack)} craftlang matches 1 run function {aux.id}\r\n')
 
 			with aux.out as o:
 				for s in statement.statements:
