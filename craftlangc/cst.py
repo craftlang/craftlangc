@@ -266,8 +266,4 @@ class Token:
 		return self.len
 
 	def __str__(self) -> str:
-		pos = self.walker.pos
-		self.walker.pos = self.pos
-		result = self.walker.advance(len(self))
-		self.walker.pos = pos
-		return result
+		return self.walker.source[self.pos:(self.pos + len(self))]
