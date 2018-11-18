@@ -67,8 +67,9 @@ def compile_func_def(file: File, func_def: FuncDef, out_dir: str) -> None:
 			i += 1
 			nc = file.namespace_decl.components
 			yield Auxiliary(
-				f'{_asciify(str(nc[0]))}:{"/".join(map(lambda c: _asciify(str(c)), islice(nc, 1, None)))}'
-				f'/{_asciify(str(func_def.identifier))}.{i}',
+				f'''{_asciify(str(nc[0]))}:{"/".join([
+					*map(lambda c: _asciify(str(c)), islice(nc, 1, None)), _asciify(str(func_def.identifier))
+				])}.{i}''',
 				open(f'''{join(
 					out_dir, "data", _asciify(str(file.namespace_decl.components[0])), "functions",
 					*map(lambda c: _asciify(str(c)), islice(file.namespace_decl.components, 1, None)),
