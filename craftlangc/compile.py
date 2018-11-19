@@ -419,6 +419,8 @@ def compile_expr(file: File, expr: Expr, out: TextIO, scope: Scope, stack: List[
 				raise Exception()  # TODO
 
 	elif isinstance(expr, UnaryExpr):
+		compile_expr(file, expr.expr, out, scope, stack)
+
 		operator = str(expr.operator)
 		type = stack.pop()
 
@@ -429,12 +431,13 @@ def compile_expr(file: File, expr: Expr, out: TextIO, scope: Scope, stack: List[
 					f'execute if score stack.{len(stack)} craftlang matches 2 run scoreboard players set'
 					f' stack.{len(stack)} craftlang 0\r\n'
 				)
+				stack += [VarType.BOOLEAN]
 			else:
 				raise Exception()  # TODO
 
 		elif operator == '+':
 			if type == VarType.SCORE:
-				pass
+				stack += [VarType.SCORE]
 			else:
 				raise Exception()  # TODO
 
@@ -445,6 +448,7 @@ def compile_expr(file: File, expr: Expr, out: TextIO, scope: Scope, stack: List[
 					f'scoreboard players operation stack.{len(stack) - 1} craftlang *= stack.{len(stack)}'
 					' craftlang\r\n'
 				)
+				stack += [VarType.SCORE]
 			else:
 				raise Exception()  # TODO
 
