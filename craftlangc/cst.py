@@ -196,7 +196,7 @@ class UnaryExpr(Expr):
 	expr: Expr
 
 	def __str__(self) -> str:
-		return f'{self.operator} {self.expr}'
+		return f'{self.operator}{self.expr}'
 
 
 @dataclass
