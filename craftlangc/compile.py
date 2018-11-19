@@ -444,8 +444,8 @@ def compile_expr(file: File, expr: Expr, out: TextIO, scope: Scope, stack: List[
 		elif operator == '-':
 			if type == VarType.SCORE:
 				out.write(
-					f'scoreboard players set stack.{len(stack)} craftlang -1\r\n'
-					f'scoreboard players operation stack.{len(stack) - 1} craftlang *= stack.{len(stack)}'
+					f'scoreboard players set stack.{len(stack) + 1} craftlang -1\r\n'
+					f'scoreboard players operation stack.{len(stack)} craftlang *= stack.{len(stack) + 1}'
 					' craftlang\r\n'
 				)
 				stack += [VarType.SCORE]
