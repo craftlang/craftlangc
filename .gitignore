@@ -1,9 +1,6 @@
-/.eggs/
+/.gradle/
 /.idea/
-/.mypy_cache/
 /build/
-/craftlangc.egg-info/
-/dist/
-/venv/
-
-__pycache__/
+/gradle/
+/gradlew
+/gradlew.bat
