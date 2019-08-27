@@ -7,7 +7,7 @@ java {
 	targetCompatibility = JavaVersion.VERSION_1_8
 }
 
-with(tasks) {
+tasks {
 	compileJava {
 		with(options) {
 			isDebug = !project.hasProperty("release")
