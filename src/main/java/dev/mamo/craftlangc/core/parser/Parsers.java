@@ -216,8 +216,7 @@ public class Parsers {
 	public static class ForwardParser implements Parser {
 		private Parser parser = null;
 
-		private ForwardParser() {
-		}
+		private ForwardParser() {}
 
 		public Parser getParser() {
 			return parser;

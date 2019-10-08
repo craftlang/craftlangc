@@ -7,7 +7,7 @@ public class RC implements Serializable {
 	private final int row;
 	private final int column;
 
-	RC(int row, int column) {
+	public RC(int row, int column) {
 		this.row = row;
 		this.column = column;
 	}

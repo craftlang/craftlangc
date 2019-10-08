@@ -195,6 +195,7 @@ public class Main {
 		out.println("Compiler for the Craftlang programming language");
 		out.println();
 		out.println("Options:");
+		out.println("-f, --force               " + TAB + "If set, overwrites the output if necessary");
 		out.println("-h, --help                " + TAB + "Displays this help message and exits");
 		out.println("-o <path>, --output <path>" + TAB + "Selects the destination path");
 		out.println("-z, --zip                 " + TAB + "If set, outputs to zip");
