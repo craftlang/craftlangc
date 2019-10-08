@@ -588,15 +588,15 @@ public class CraftlangCompiler {
 			);
 
 			for (int i = 1, maxParameterCount = maxParameterCounts.getOrDefault(namespace, 0); i <= maxParameterCount; i++) {
-				writeln(path, "scoreboard objectives add cr_arg_" + i + " dummy");
+				writeln(path, "scoreboard objectives add cr_arg_" + Util.toBase62(i) + " dummy");
 			}
 
 			for (int i = 1, maxLocalCount = maxLocalCounts.getOrDefault(namespace, 0); i <= maxLocalCount; i++) {
-				writeln(path, "scoreboard objectives add cr_local_" + i + " dummy");
+				writeln(path, "scoreboard objectives add cr_local_" + Util.toBase62(i) + " dummy");
 			}
 
 			for (int i = 1, maxValCount = maxStackCounts.getOrDefault(namespace, 0); i <= maxValCount; i++) {
-				writeln(path, "scoreboard objectives add cr_stack_" + i + " dummy");
+				writeln(path, "scoreboard objectives add cr_stack_" + Util.toBase62(i) + " dummy");
 			}
 
 			writeln(
