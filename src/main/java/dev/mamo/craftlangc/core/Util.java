@@ -63,8 +63,8 @@ public class Util {
 
 	public static String toBase62(int integer) {
 		StringBuilder result = new StringBuilder();
-		for (; integer > 0; integer /= 62) {
-			int remainder = integer % 62;
+		for (; integer != 0; integer = Integer.divideUnsigned(integer, 62)) {
+			int remainder = Integer.remainderUnsigned(integer, 62);
 			if (remainder <= 9) {
 				result.insert(0, remainder);
 			} else if (remainder <= 35) {
