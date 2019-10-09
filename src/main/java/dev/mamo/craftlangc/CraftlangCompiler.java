@@ -47,7 +47,7 @@ public class CraftlangCompiler {
 			for (VariableDeclarationStatement variableDeclaration : unit.getVariableDeclarations()) {
 				QualifiedName qualifiedName = new QualifiedName(namespace, variableDeclaration.getName());
 
-				if (functions.containsKey(qualifiedName)) {
+				if (globals.containsKey(qualifiedName)) {
 					throw new CompileException(variableDeclaration.getSource().getBeginIndex(), "Variable already defined: " + qualifiedName);
 				}
 
@@ -443,7 +443,12 @@ public class CraftlangCompiler {
 
 						if (name.getNamespace() == null) {
 							variable = locals.get(name.getName());
-							local = true;
+							if (variable != null) {
+								local = true;
+							} else {
+								variable = globals.get(new QualifiedName(namespace, name.getName()));
+								local = false;
+							}
 						} else {
 							variable = globals.get(name);
 							local = false;
@@ -464,10 +469,11 @@ public class CraftlangCompiler {
 						switch (type) {
 							case BOOLEAN:
 							case INTEGER:
-								writeln(path[0], "execute as @e if score @s cr_id = #cr cr_sp run scoreboard players operation " + (local ? "@s " : "#cr ") + variable.getId() + " = @s " + variable.getId());
+								writeln(path[0], "execute as @e if score @s cr_id = #cr cr_sp run scoreboard players operation " + (local ? "@s " : "#cr ") + variable.getId() + " = @s " + value.getId());
 								break;
 							default:
 								assert false : type;
+								break;
 						}
 						return null;
 					}
