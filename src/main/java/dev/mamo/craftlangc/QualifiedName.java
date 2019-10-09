@@ -45,6 +45,6 @@ public class QualifiedName implements Serializable {
 	@Override
 	public String toString() {
 		Namespace namespace = getNamespace();
-		return namespace != null ? namespace + getName() : getName();
+		return namespace != null ? namespace + "." + getName() : getName();
 	}
 }
