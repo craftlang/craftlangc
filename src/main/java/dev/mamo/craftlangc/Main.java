@@ -191,7 +191,7 @@ public class Main {
 	}
 
 	private static void printHelp(PrintStream out) {
-		out.println("Usage: craftlangc [options] <source> [-o] <destination>");
+		out.println("Usage: craftlangc [options] <sources> [-o] <destination>");
 		out.println("Compiler for the Craftlang programming language");
 		out.println();
 		out.println("Options:");
