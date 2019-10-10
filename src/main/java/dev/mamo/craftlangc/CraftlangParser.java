@@ -334,6 +334,7 @@ public class CraftlangParser {
 			string("do"),
 			separator,
 			body,
+			separator,
 			indent,
 			string("while"),
 			spaces,
