@@ -118,7 +118,7 @@ public class CraftlangCompiler {
 
 			for (FunctionDefinition function : unit.getFunctions()) {
 				Path[] path = {getFunctionPath(base, new QualifiedName(namespace, function.getName()))};
-				Scope<String, Variable> locals = new Scope<>();
+				@SuppressWarnings("unchecked") Scope<String, Variable>[] locals = new Scope[]{new Scope<>()};
 				Deque<Variable> stack = new ArrayDeque<>();
 				int[] helperCount = {0};
 
@@ -134,14 +134,14 @@ public class CraftlangCompiler {
 				for (int i = 0, parameterCount = parameters.size(); i < parameterCount; i++) {
 					Parameter parameter = parameters.get(i);
 					String id = "cr_arg_" + Util.toBase62(i + 1);
-					locals.declareAndAssign(parameter.getName(), new Variable(parameter.getType(), id));
+					locals[0].declareAndAssign(parameter.getName(), new Variable(parameter.getType(), id));
 					writeln(path[0], "execute as @e[tag=cr_frame] if score @s cr_id = #cr cr_fp run scoreboard players operation @s " + id + " = #cr " + id);
 				}
 
 				// Declare the variable containing the returned value
 				Type returnType = function.getReturnType();
 				if (returnType != null) {
-					locals.declareAndAssign(function.getName(), new Variable(returnType, "cr_return_1"));
+					locals[0].declareAndAssign(function.getName(), new Variable(returnType, "cr_return_1"));
 				}
 
 				// The expression compiler. Needed later
@@ -341,7 +341,7 @@ public class CraftlangCompiler {
 						boolean local;
 
 						if (name.getNamespace() == null) {
-							variable = locals.get(name.getName());
+							variable = locals[0].get(name.getName());
 
 							if (variable != null) {
 								local = true;
@@ -397,7 +397,7 @@ public class CraftlangCompiler {
 					public Void visitVariableDeclarationAndAssignmentStatement(VariableDeclarationAndAssignmentStatement statement) throws IOException {
 						String name = statement.getName();
 
-						if (locals.get(name) != null) {
+						if (locals[0].get(name) != null) {
 							throw new CompileException(statement.getSource().getBeginIndex(), "Variable already defined: " + name);
 						}
 
@@ -413,7 +413,7 @@ public class CraftlangCompiler {
 						int localCount = maxLocalCounts.getOrDefault(namespace, 0) + 1;
 						maxLocalCounts.put(namespace, localCount);
 						String id = "cr_local_" + Util.toBase62(localCount);
-						locals.declareAndAssign(name, new Variable(type, id));
+						locals[0].declareAndAssign(name, new Variable(type, id));
 
 						switch (type) {
 							case BOOLEAN:
@@ -431,13 +431,13 @@ public class CraftlangCompiler {
 					public Void visitVariableDeclarationStatement(VariableDeclarationStatement statement) {
 						String name = statement.getName();
 
-						if (locals.get(name) != null) {
+						if (locals[0].get(name) != null) {
 							throw new CompileException(statement.getSource().getBeginIndex(), "Variable already defined: " + name);
 						}
 
 						int localCount = maxLocalCounts.getOrDefault(namespace, 0) + 1;
 						maxLocalCounts.put(namespace, localCount);
-						locals.declareAndAssign(name, new Variable(statement.getType(), "cr_local_" + Util.toBase62(localCount)));
+						locals[0].declareAndAssign(name, new Variable(statement.getType(), "cr_local_" + Util.toBase62(localCount)));
 						return null;
 					}
 
@@ -448,7 +448,7 @@ public class CraftlangCompiler {
 						boolean local;
 
 						if (name.getNamespace() == null) {
-							variable = locals.get(name.getName());
+							variable = locals[0].get(name.getName());
 							if (variable != null) {
 								local = true;
 							} else {
@@ -548,11 +548,13 @@ public class CraftlangCompiler {
 
 							Path p = path[0];
 							path[0] = getFunctionPath(base, helperName);
+							locals[0] = new Scope<>(locals[0]);
 
 							for (Statement s : statement.getIfTrue()) {
 								s.accept(this);
 							}
 
+							locals[0] = locals[0].getParent();
 							path[0] = p;
 						}
 
@@ -563,11 +565,13 @@ public class CraftlangCompiler {
 
 							Path p = path[0];
 							path[0] = getFunctionPath(base, helperName);
+							locals[0] = new Scope<>(locals[0]);
 
 							for (Statement s : ifFalse) {
 								s.accept(this);
 							}
 
+							locals[0] = locals[0].getParent();
 							path[0] = p;
 						}
 						return null;
@@ -591,11 +595,13 @@ public class CraftlangCompiler {
 						QualifiedName helper2Name = new QualifiedName(craftlangNamespace, function.getName() + "." + Util.toBase62(++helperCount[0]));
 						writeln(path[0], "execute as @e[tag=cr_frame] if score @s cr_id = #cr cr_fp if score @s " + condition.getId() + " matches 1 run function " + getMinecraftId(helper2Name));
 						path[0] = getFunctionPath(base, helper2Name);
+						locals[0] = new Scope<>(locals[0]);
 
 						for (Statement s : statement.getBody()) {
 							s.accept(this);
 						}
 
+						locals[0] = locals[0].getParent();
 						writeln(path[0], "function " + helper1MinecraftId);
 						path[0] = p;
 						return null;
@@ -609,10 +615,13 @@ public class CraftlangCompiler {
 
 						Path p = path[0];
 						path[0] = getFunctionPath(base, helperName);
+						locals[0] = new Scope<>(locals[0]);
 
 						for (Statement s : statement.getBody()) {
 							s.accept(this);
 						}
+
+						locals[0] = locals[0].getParent();
 
 						statement.getCondition().accept(expressionCompiler);
 						Variable condition = stack.pop();
