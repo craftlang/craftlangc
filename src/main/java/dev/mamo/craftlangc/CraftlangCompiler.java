@@ -127,7 +127,7 @@ public class CraftlangCompiler {
 					Parameter parameter = parameters.get(i);
 					String id = "cr_arg_" + Util.toBase62(i + 1);
 					locals.declareAndAssign(parameter.getName(), new Variable(parameter.getType(), id));
-					writeln(path[0], "execute as @e if score @s cr_id = #cr cr_fp run scoreboard players operation @s " + id + " = #cr " + id);
+					writeln(path[0], "execute as @e[tag=cr_frame] if score @s cr_id = #cr cr_fp run scoreboard players operation @s " + id + " = #cr " + id);
 				}
 
 				// Declare the variable containing the returned value
@@ -154,17 +154,17 @@ public class CraftlangCompiler {
 							case BOOLEAN:
 								switch (expression.getOperator()) {
 									case AND:
-										writeln(path[0], "execute as @e if score @s cr_id = #cr cr_fp run scoreboard players operation @s " + left.getId() + " *= @s " + right.getId());
+										writeln(path[0], "execute as @e[tag=cr_frame] if score @s cr_id = #cr cr_fp run scoreboard players operation @s " + left.getId() + " *= @s " + right.getId());
 										break;
 									case OR:
-										writeln(path[0], "execute as @e if score @s cr_id = #cr cr_fp store success score @s " + left.getId() + " unless entity @e[scores={" + left.getId() + "=0," + right.getId() + "=0}]");
+										writeln(path[0], "execute as @e[tag=cr_frame] if score @s cr_id = #cr cr_fp store success score @s " + left.getId() + " unless entity @e[scores={" + left.getId() + "=0," + right.getId() + "=0}]");
 										break;
 									case EQUAL:
-										writeln(path[0], "execute as @e if score @s cr_id = #cr cr_fp store success score @s " + left.getId() + " if score @s " + left.getId() + " = @s " + right.getId());
+										writeln(path[0], "execute as @e[tag=cr_frame] if score @s cr_id = #cr cr_fp store success score @s " + left.getId() + " if score @s " + left.getId() + " = @s " + right.getId());
 										break;
 									case XOR:
 									case NOT_EQUAL:
-										writeln(path[0], "execute as @e if score @s cr_id = #cr cr_fp store success score @s " + left.getId() + " if score @s " + left.getId() + " != @s " + right.getId());
+										writeln(path[0], "execute as @e[tag=cr_frame] if score @s cr_id = #cr cr_fp store success score @s " + left.getId() + " if score @s " + left.getId() + " != @s " + right.getId());
 										break;
 									default:
 										throw new CompileException(expression.getSource().getBeginIndex(), "Unsupported operation");
@@ -174,42 +174,42 @@ public class CraftlangCompiler {
 							case INTEGER:
 								switch (expression.getOperator()) {
 									case PLUS:
-										writeln(path[0], "execute as @e if score @s cr_id = #cr cr_fp run scoreboard players operation @s " + left.getId() + " += @s " + right.getId());
+										writeln(path[0], "execute as @e[tag=cr_frame] if score @s cr_id = #cr cr_fp run scoreboard players operation @s " + left.getId() + " += @s " + right.getId());
 										break;
 									case MINUS:
-										writeln(path[0], "execute as @e if score @s cr_id = #cr cr_fp run scoreboard players operation @s " + left.getId() + " -= @s " + right.getId());
+										writeln(path[0], "execute as @e[tag=cr_frame] if score @s cr_id = #cr cr_fp run scoreboard players operation @s " + left.getId() + " -= @s " + right.getId());
 										break;
 									case TIMES:
-										writeln(path[0], "execute as @e if score @s cr_id = #cr cr_fp run scoreboard players operation @s " + left.getId() + " *= @s " + right.getId());
+										writeln(path[0], "execute as @e[tag=cr_frame] if score @s cr_id = #cr cr_fp run scoreboard players operation @s " + left.getId() + " *= @s " + right.getId());
 										break;
 									case DIVIDE:
-										writeln(path[0], "execute as @e if score @s cr_id = #cr cr_fp run scoreboard players operation @s " + left.getId() + " /= @s " + right.getId());
+										writeln(path[0], "execute as @e[tag=cr_frame] if score @s cr_id = #cr cr_fp run scoreboard players operation @s " + left.getId() + " /= @s " + right.getId());
 										break;
 									case REMAINDER:
-										writeln(path[0], "execute as @e if score @s cr_id = #cr cr_fp run scoreboard players operation @s " + left.getId() + " %= @s " + right.getId());
+										writeln(path[0], "execute as @e[tag=cr_frame] if score @s cr_id = #cr cr_fp run scoreboard players operation @s " + left.getId() + " %= @s " + right.getId());
 										break;
 									case EQUAL:
-										writeln(path[0], "execute as @e if score @s cr_id = #cr cr_fp store success score @s " + left.getId() + " if score @s " + left.getId() + " = @s " + right.getId());
+										writeln(path[0], "execute as @e[tag=cr_frame] if score @s cr_id = #cr cr_fp store success score @s " + left.getId() + " if score @s " + left.getId() + " = @s " + right.getId());
 										left.setType(Type.BOOLEAN);
 										break;
 									case NOT_EQUAL:
-										writeln(path[0], "execute as @e if score @s cr_id = #cr cr_fp store success score @s " + left.getId() + " if score @s " + left.getId() + " != @s " + right.getId());
+										writeln(path[0], "execute as @e[tag=cr_frame] if score @s cr_id = #cr cr_fp store success score @s " + left.getId() + " if score @s " + left.getId() + " != @s " + right.getId());
 										left.setType(Type.BOOLEAN);
 										break;
 									case LESS_OR_EQUAL:
-										writeln(path[0], "execute as @e if score @s cr_id = #cr cr_fp store success score @s " + left.getId() + " if score @s " + left.getId() + " <= @s " + right.getId());
+										writeln(path[0], "execute as @e[tag=cr_frame] if score @s cr_id = #cr cr_fp store success score @s " + left.getId() + " if score @s " + left.getId() + " <= @s " + right.getId());
 										left.setType(Type.BOOLEAN);
 										break;
 									case LESS:
-										writeln(path[0], "execute as @e if score @s cr_id = #cr cr_fp store success score @s " + left.getId() + " if score @s " + left.getId() + " < @s " + right.getId());
+										writeln(path[0], "execute as @e[tag=cr_frame] if score @s cr_id = #cr cr_fp store success score @s " + left.getId() + " if score @s " + left.getId() + " < @s " + right.getId());
 										left.setType(Type.BOOLEAN);
 										break;
 									case GREATER_OR_EQUAL:
-										writeln(path[0], "execute as @e if score @s cr_id = #cr cr_fp store success score @s " + left.getId() + " if score @s " + left.getId() + " >= @s " + right.getId());
+										writeln(path[0], "execute as @e[tag=cr_frame] if score @s cr_id = #cr cr_fp store success score @s " + left.getId() + " if score @s " + left.getId() + " >= @s " + right.getId());
 										left.setType(Type.BOOLEAN);
 										break;
 									case GREATER:
-										writeln(path[0], "execute as @e if score @s cr_id = #cr cr_fp store success score @s " + left.getId() + " if score @s " + left.getId() + " > @s " + right.getId());
+										writeln(path[0], "execute as @e[tag=cr_frame] if score @s cr_id = #cr cr_fp store success score @s " + left.getId() + " if score @s " + left.getId() + " > @s " + right.getId());
 										left.setType(Type.BOOLEAN);
 										break;
 									default:
@@ -236,7 +236,7 @@ public class CraftlangCompiler {
 								if (!type.equals(Type.BOOLEAN)) {
 									throw new CompileException(expression.getSource().getBeginIndex(), "Unsupported operation");
 								}
-								writeln(path[0], "execute as @e if score @s cr_id = #cr cr_fp store success score @s " + operand.getId() + " if score @s " + operand.getId() + " matches 0");
+								writeln(path[0], "execute as @e[tag=cr_frame] if score @s cr_id = #cr cr_fp store success score @s " + operand.getId() + " if score @s " + operand.getId() + " matches 0");
 								break;
 							case PLUS:
 								if (!type.equals(Type.INTEGER)) {
@@ -247,7 +247,7 @@ public class CraftlangCompiler {
 								if (!type.equals(Type.INTEGER)) {
 									throw new CompileException(expression.getSource().getEndIndex(), "Unsupported operation");
 								}
-								writeln(path[0], "execute as @e if score @s cr_id = #cr cr_fp run scoreboard players operation @s " + operand.getId() + " *= #cr cr_negate");
+								writeln(path[0], "execute as @e[tag=cr_frame] if score @s cr_id = #cr cr_fp run scoreboard players operation @s " + operand.getId() + " *= #cr cr_negate");
 								break;
 							default:
 								assert false : expression.getOperator();
@@ -260,7 +260,7 @@ public class CraftlangCompiler {
 					@Override
 					public Void visitIntegerExpression(IntegerExpression expression) throws IOException {
 						String id = "cr_stack_" + Util.toBase62(stack.size() + 1);
-						writeln(path[0], "execute as @e if score @s cr_id = #cr cr_fp run scoreboard players set @s " + id + " " + expression.getInteger());
+						writeln(path[0], "execute as @e[tag=cr_frame] if score @s cr_id = #cr cr_fp run scoreboard players set @s " + id + " " + expression.getInteger());
 						stack.push(new Variable(Type.INTEGER, id));
 						maxStackCounts.put(namespace, Math.max(maxStackCounts.getOrDefault(namespace, 0), stack.size()));
 						return null;
@@ -300,7 +300,7 @@ public class CraftlangCompiler {
 							switch (type) {
 								case BOOLEAN:
 								case INTEGER:
-									writeln(path[0], "execute as @e if score @s cr_id = #cr cr_fp run scoreboard players operation #cr cr_arg_" + Util.toBase62(i + 1) + " = @s " + argument.getId());
+									writeln(path[0], "execute as @e[tag=cr_frame] if score @s cr_id = #cr cr_fp run scoreboard players operation #cr cr_arg_" + Util.toBase62(i + 1) + " = @s " + argument.getId());
 									break;
 								default:
 									assert false : type;
@@ -315,7 +315,7 @@ public class CraftlangCompiler {
 								case BOOLEAN:
 								case INTEGER:
 									String id = "cr_stack_" + Util.toBase62(stack.size() + 1);
-									writeln(path[0], "execute as @e if score @s cr_id = #cr cr_fp run scoreboard players operation @s " + id + " = #cr cr_return_1");
+									writeln(path[0], "execute as @e[tag=cr_frame] if score @s cr_id = #cr cr_fp run scoreboard players operation @s " + id + " = #cr cr_return_1");
 									stack.push(new Variable(returnType, id));
 									maxStackCounts.put(namespace, Math.max(maxStackCounts.getOrDefault(namespace, 0), stack.size()));
 									break;
@@ -341,13 +341,13 @@ public class CraftlangCompiler {
 								switch (name.getName()) {
 									case "true":
 										String id = "cr_stack_" + Util.toBase62(stack.size() + 1);
-										writeln(path[0], "execute as @e if score @s cr_id = #cr cr_fp run scoreboard players set @s " + id + " 1");
+										writeln(path[0], "execute as @e[tag=cr_frame] if score @s cr_id = #cr cr_fp run scoreboard players set @s " + id + " 1");
 										stack.push(new Variable(Type.BOOLEAN, id));
 										maxStackCounts.put(namespace, Math.max(maxStackCounts.getOrDefault(namespace, 0), stack.size()));
 										return null;
 									case "false":
 										id = "cr_stack_" + Util.toBase62(stack.size() + 1);
-										writeln(path[0], "execute as @e if score @s cr_id = #cr cr_fp run scoreboard players set @s " + id + " 0");
+										writeln(path[0], "execute as @e[tag=cr_frame] if score @s cr_id = #cr cr_fp run scoreboard players set @s " + id + " 0");
 										stack.push(new Variable(Type.BOOLEAN, id));
 										maxStackCounts.put(namespace, Math.max(maxStackCounts.getOrDefault(namespace, 0), stack.size()));
 										return null;
@@ -371,7 +371,7 @@ public class CraftlangCompiler {
 							case BOOLEAN:
 							case INTEGER:
 								String id = "cr_stack_" + Util.toBase62(stack.size() + 1);
-								writeln(path[0], "execute as @e if score @s cr_id = #cr cr_fp run scoreboard players operation @s " + id + " = " + (local ? "@s " : "#cr ") + variable.getId());
+								writeln(path[0], "execute as @e[tag=cr_frame] if score @s cr_id = #cr cr_fp run scoreboard players operation @s " + id + " = " + (local ? "@s " : "#cr ") + variable.getId());
 								stack.push(new Variable(type, id));
 								maxStackCounts.put(namespace, Math.max(maxStackCounts.getOrDefault(namespace, 0), stack.size()));
 								break;
@@ -410,7 +410,7 @@ public class CraftlangCompiler {
 						switch (type) {
 							case BOOLEAN:
 							case INTEGER:
-								writeln(path[0], "execute as @e if score @s cr_id = #cr cr_fp run scoreboard players operation @s " + id + " = @s " + value.getId());
+								writeln(path[0], "execute as @e[tag=cr_frame] if score @s cr_id = #cr cr_fp run scoreboard players operation @s " + id + " = @s " + value.getId());
 								break;
 							default:
 								assert false : type;
@@ -466,55 +466,55 @@ public class CraftlangCompiler {
 
 						switch (statement.getOperator()) {
 							case EQUAL:
-								writeln(path[0], "execute as @e if score @s cr_id = #cr cr_fp run scoreboard players operation " + (local ? "@s " : "#cr ") + variable.getId() + " = @s " + value.getId());
+								writeln(path[0], "execute as @e[tag=cr_frame] if score @s cr_id = #cr cr_fp run scoreboard players operation " + (local ? "@s " : "#cr ") + variable.getId() + " = @s " + value.getId());
 								break;
 							case PLUS_EQUAL:
 								if (!type.equals(Type.INTEGER)) {
 									throw new CompileException(statement.getSource().getBeginIndex(), "Unsupported operation");
 								}
-								writeln(path[0], "execute as @e if score @s cr_id = #cr cr_fp run scoreboard players operation " + (local ? "@s " : "#cr ") + variable.getId() + " += @s " + value.getId());
+								writeln(path[0], "execute as @e[tag=cr_frame] if score @s cr_id = #cr cr_fp run scoreboard players operation " + (local ? "@s " : "#cr ") + variable.getId() + " += @s " + value.getId());
 								break;
 							case MINUS_EQUAL:
 								if (!type.equals(Type.INTEGER)) {
 									throw new CompileException(statement.getSource().getBeginIndex(), "Unsupported operation");
 								}
-								writeln(path[0], "execute as @e if score @s cr_id = #cr cr_fp run scoreboard players operation " + (local ? "@s " : "#cr ") + variable.getId() + " -= @s " + value.getId());
+								writeln(path[0], "execute as @e[tag=cr_frame] if score @s cr_id = #cr cr_fp run scoreboard players operation " + (local ? "@s " : "#cr ") + variable.getId() + " -= @s " + value.getId());
 								break;
 							case TIMES_EQUAL:
 								if (!type.equals(Type.INTEGER)) {
 									throw new CompileException(statement.getSource().getBeginIndex(), "Unsupported operation");
 								}
-								writeln(path[0], "execute as @e if score @s cr_id = #cr cr_fp run scoreboard players operation " + (local ? "@s " : "#cr ") + variable.getId() + " *= @s " + value.getId());
+								writeln(path[0], "execute as @e[tag=cr_frame] if score @s cr_id = #cr cr_fp run scoreboard players operation " + (local ? "@s " : "#cr ") + variable.getId() + " *= @s " + value.getId());
 								break;
 							case DIVIDE_EQUAL:
 								if (!type.equals(Type.INTEGER)) {
 									throw new CompileException(statement.getSource().getBeginIndex(), "Unsupported operation");
 								}
-								writeln(path[0], "execute as @e if score @s cr_id = #cr cr_fp run scoreboard players operation " + (local ? "@s " : "#cr ") + variable.getId() + " /= @s " + value.getId());
+								writeln(path[0], "execute as @e[tag=cr_frame] if score @s cr_id = #cr cr_fp run scoreboard players operation " + (local ? "@s " : "#cr ") + variable.getId() + " /= @s " + value.getId());
 								break;
 							case REMAINDER_EQUAL:
 								if (!type.equals(Type.INTEGER)) {
 									throw new CompileException(statement.getSource().getBeginIndex(), "Unsupported operation");
 								}
-								writeln(path[0], "execute as @e if score @s cr_id = #cr cr_fp run scoreboard players operation " + (local ? "@s " : "#cr ") + variable.getId() + " %= @s " + value.getId());
+								writeln(path[0], "execute as @e[tag=cr_frame] if score @s cr_id = #cr cr_fp run scoreboard players operation " + (local ? "@s " : "#cr ") + variable.getId() + " %= @s " + value.getId());
 								break;
 							case AND_EQUAL:
 								if (!type.equals(Type.BOOLEAN)) {
 									throw new CompileException(statement.getSource().getBeginIndex(), "Unsupported operation");
 								}
-								writeln(path[0], "execute as @e if score @s cr_id = #cr cr_fp run scoreboard players operation " + (local ? "@s " : "#cr ") + variable.getId() + " *= @s " + value.getId());
+								writeln(path[0], "execute as @e[tag=cr_frame] if score @s cr_id = #cr cr_fp run scoreboard players operation " + (local ? "@s " : "#cr ") + variable.getId() + " *= @s " + value.getId());
 								break;
 							case XOR_EQUAL:
 								if (!type.equals(Type.BOOLEAN)) {
 									throw new CompileException(statement.getSource().getBeginIndex(), "Unsupported operation");
 								}
-								writeln(path[0], "execute as @e if score @s cr_id = #cr cr_fp store success score " + (local ? "@s " : "#cr ") + variable.getId() + " if score @s " + variable.getId() + " != @s " + value.getId());
+								writeln(path[0], "execute as @e[tag=cr_frame] if score @s cr_id = #cr cr_fp store success score " + (local ? "@s " : "#cr ") + variable.getId() + " if score @s " + variable.getId() + " != @s " + value.getId());
 								break;
 							case OR_EQUAL:
 								if (!type.equals(Type.BOOLEAN)) {
 									throw new CompileException(statement.getSource().getBeginIndex(), "Unsupported operation");
 								}
-								writeln(path[0], "execute as @e if score @s cr_id = #cr cr_fp store success score " + (local ? "@s " : "#cr ") + variable.getId() + " unless entity @e[scores={" + variable.getId() + "=0," + value.getId() + "=0}]");
+								writeln(path[0], "execute as @e[tag=cr_frame] if score @s cr_id = #cr cr_fp store success score " + (local ? "@s " : "#cr ") + variable.getId() + " unless entity @e[scores={" + variable.getId() + "=0," + value.getId() + "=0}]");
 								break;
 							default:
 								assert false : statement.getOperator();
@@ -536,7 +536,7 @@ public class CraftlangCompiler {
 
 						{
 							QualifiedName helperName = new QualifiedName(craftlangNamespace, function.getName() + "." + Util.toBase62(++helperCount[0]));
-							writeln(path[0], "execute as @e if score @s cr_id = #cr cr_fp if score @s " + condition.getId() + " matches 1 run function " + getMinecraftId(helperName));
+							writeln(path[0], "execute as @e[tag=cr_frame] if score @s cr_id = #cr cr_fp if score @s " + condition.getId() + " matches 1 run function " + getMinecraftId(helperName));
 
 							Path p = path[0];
 							path[0] = getFunctionPath(base, helperName);
@@ -551,7 +551,7 @@ public class CraftlangCompiler {
 						if (hasFalse) {
 							stack.pop();
 							QualifiedName helperName = new QualifiedName(craftlangNamespace, function.getName() + "." + Util.toBase62(++helperCount[0]));
-							writeln(path[0], "execute as @e if score @s cr_id = #cr cr_fp if score @s " + condition.getId() + " matches 0 run function " + getMinecraftId(helperName));
+							writeln(path[0], "execute as @e[tag=cr_frame] if score @s cr_id = #cr cr_fp if score @s " + condition.getId() + " matches 0 run function " + getMinecraftId(helperName));
 
 							Path p = path[0];
 							path[0] = getFunctionPath(base, helperName);
@@ -581,7 +581,7 @@ public class CraftlangCompiler {
 						}
 
 						QualifiedName helper2Name = new QualifiedName(craftlangNamespace, function.getName() + "." + Util.toBase62(++helperCount[0]));
-						writeln(path[0], "execute as @e if score @s cr_id = #cr cr_fp if score @s " + condition.getId() + " matches 1 run function " + getMinecraftId(helper2Name));
+						writeln(path[0], "execute as @e[tag=cr_frame] if score @s cr_id = #cr cr_fp if score @s " + condition.getId() + " matches 1 run function " + getMinecraftId(helper2Name));
 						path[0] = getFunctionPath(base, helper2Name);
 
 						for (Statement s : statement.getBody()) {
@@ -612,7 +612,7 @@ public class CraftlangCompiler {
 							throw new CompileException(statement.getCondition().getSource().getBeginIndex(), "Not a boolean expression");
 						}
 
-						writeln(path[0], "execute as @e if score @s cr_id = #cr cr_fp if score @s " + condition.getId() + " matches 1 run function " + helperMinecraftId);
+						writeln(path[0], "execute as @e[tag=cr_frame] if score @s cr_id = #cr cr_fp if score @s " + condition.getId() + " matches 1 run function " + helperMinecraftId);
 						path[0] = p;
 						return null;
 					}
@@ -631,11 +631,11 @@ public class CraftlangCompiler {
 
 				// Kill the stack frame entity
 				if (returnType != null) {
-					writeln(path[0], "execute as @e if score @s cr_id = #cr cr_fp run scoreboard players operation #cr cr_return_1 = @s cr_return_1");
+					writeln(path[0], "execute as @e[tag=cr_frame] if score @s cr_id = #cr cr_fp run scoreboard players operation #cr cr_return_1 = @s cr_return_1");
 				}
 				writeln(
 					path[0],
-					"execute as @e if score @s cr_id = #cr cr_fp run kill @s" + NL
+					"execute as @e[tag=cr_frame] if score @s cr_id = #cr cr_fp run kill @s" + NL
 						+ "scoreboard players remove #cr cr_fp 1"
 				);
 			}
