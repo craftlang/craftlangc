@@ -261,6 +261,7 @@ public class CraftlangCompiler {
 									"execute as @e[tag=cr_frame] if score @s cr_id = #cr cr_fp run scoreboard players set @s " + id + " -1",
 									"execute as @e[tag=cr_frame] if score @s cr_id = #cr cr_fp run scoreboard players operation @s " + operand.getId() + " *= @s " + id
 								);
+								maxStackCounts.put(namespace, Math.max(maxStackCounts.getOrDefault(namespace, 0), stack.size() + 1));
 								break;
 							default:
 								assert false : expression.getOperator();
