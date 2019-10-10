@@ -526,8 +526,12 @@ public class CraftlangCompiler {
 
 					@Override
 					public Void visitIfStatement(IfStatement statement) throws IOException {
+						List<Statement> ifFalse = statement.getIfFalse();
+						boolean hasFalse = !ifFalse.isEmpty();
+
 						statement.getCondition().accept(expressionCompiler);
-						Variable condition = stack.pop();
+						Variable condition = hasFalse ? stack.getFirst() : stack.pop();
+
 						if (!condition.getType().equals(Type.BOOLEAN)) {
 							throw new CompileException(statement.getCondition().getSource().getBeginIndex(), "Not a boolean expression");
 						}
@@ -546,8 +550,8 @@ public class CraftlangCompiler {
 							path[0] = p;
 						}
 
-						List<Statement> ifFalse = statement.getIfFalse();
-						if (!ifFalse.isEmpty()) {
+						if (hasFalse) {
+							stack.pop();
 							QualifiedName helperName = new QualifiedName(craftlangNamespace, function.getName() + "." + Util.toBase62(++helperCount[0]));
 							writeln(path[0], "execute as @e if score @s cr_id = #cr cr_sp if score @s " + condition.getId() + " matches 0 run function " + getMinecraftId(helperName));
 

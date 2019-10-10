@@ -307,7 +307,8 @@ public class CraftlangParser {
 			expression
 		));
 
-		Parser ifStatement = labeled(L.IF_STATEMENT, sequence(
+		ForwardParser ifStatement = forward();
+		ifStatement.setParser(labeled(L.IF_STATEMENT, sequence(
 			string("if"),
 			spaces,
 			expression,
@@ -317,10 +318,18 @@ public class CraftlangParser {
 				separator,
 				indent,
 				string("else"),
-				separator,
-				labeled(L.IF_FALSE, body)
+				alternative(
+					sequence(
+						spaces,
+						ifStatement
+					),
+					sequence(
+						separator,
+						labeled(L.IF_FALSE, body)
+					)
+				)
 			))
-		));
+		)));
 
 		Parser whileStatement = labeled(L.WHILE_STATEMENT, sequence(
 			string("while"),
@@ -637,6 +646,10 @@ public class CraftlangParser {
 					break;
 				case L.IF_FALSE:
 					ifFalse = parseBody(child);
+					break;
+				case L.IF_STATEMENT:
+					ifFalse = new ArrayList<>();
+					ifFalse.add(parseIfStatement(child));
 					break;
 				default:
 					assert false : child.getLabel();
