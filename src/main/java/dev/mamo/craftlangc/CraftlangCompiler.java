@@ -255,7 +255,12 @@ public class CraftlangCompiler {
 								if (!type.equals(Type.INTEGER)) {
 									throw new CompileException(expression.getSource().getEndIndex(), "Unsupported operation");
 								}
-								writeln(path[0], "execute as @e[tag=cr_frame] if score @s cr_id = #cr cr_fp run scoreboard players operation @s " + operand.getId() + " *= #cr cr_negate");
+								String id = "cr_stack_" + Util.toBase62(stack.size() + 1);
+								writeln(
+									path[0],
+									"execute as @e[tag=cr_frame] if score @s cr_id = #cr cr_fp run scoreboard players set @s " + id + " -1",
+									"execute as @e[tag=cr_frame] if score @s cr_id = #cr cr_fp run scoreboard players operation @s " + operand.getId() + " *= @s" + id
+								);
 								break;
 							default:
 								assert false : expression.getOperator();
@@ -668,8 +673,7 @@ public class CraftlangCompiler {
 				path,
 				"gamerule maxCommandChainLength 2147483647",
 				"scoreboard objectives add cr_id dummy",
-				"scoreboard objectives add cr_fp dummy",
-				"scoreboard objectives add cr_negate dummy"
+				"scoreboard objectives add cr_fp dummy"
 			);
 
 			for (int i = 1, maxParameterCount = maxParameterCounts.getOrDefault(namespace, 0); i <= maxParameterCount; i++) {
@@ -688,8 +692,7 @@ public class CraftlangCompiler {
 				path,
 				"scoreboard objectives add cr_return_1 dummy",
 				"scoreboard players set #cr cr_id 0",
-				"scoreboard players set #cr cr_fp 0",
-				"scoreboard players set #cr cr_negate -1"
+				"scoreboard players set #cr cr_fp 0"
 			);
 		}
 	}
