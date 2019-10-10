@@ -19,12 +19,12 @@ public class CraftlangCompiler {
 	public static void compile(Path base, List<Unit> units) throws IOException {
 		writeln(
 			base.resolve("pack.mcmeta"),
-			"{" + NL
-				+ TAB + "\"pack\": {" + NL
-				+ TAB + TAB + "\"pack_format\": 4," + NL
-				+ TAB + TAB + "\"description\": \"\"" + NL
-				+ TAB + "}" + NL
-				+ "}"
+			"{",
+			TAB + "\"pack\": {",
+			TAB + TAB + "\"pack_format\": 4,",
+			TAB + TAB + "\"description\": \"\"",
+			TAB + "}",
+			"}"
 		);
 
 		if (units.isEmpty()) {
@@ -93,14 +93,22 @@ public class CraftlangCompiler {
 			Path tagPath = getTagPath(base, entry.getKey());
 			writeln(
 				tagPath,
-				"{" + NL
-					+ TAB + "\"values\": [" + NL
-					+ TAB + TAB + "\"" + getMinecraftId(functionNamesIterator.next()) + "\""
+				"{",
+				TAB + "\"values\": [",
+				TAB + TAB + "\"" + getMinecraftId(functionNamesIterator.next()) + "\""
 			);
 			while (functionNamesIterator.hasNext()) {
-				writeln(tagPath, "," + NL + TAB + TAB + "\"" + getMinecraftId(functionNamesIterator.next()) + "\"");
+				writeln(
+					tagPath,
+					",",
+					TAB + TAB + "\"" + getMinecraftId(functionNamesIterator.next()) + "\""
+				);
 			}
-			writeln(tagPath, TAB + "]" + NL + "}");
+			writeln(
+				tagPath,
+				TAB + "]",
+				"}"
+			);
 		}
 
 		// Compile the functions of each unit
@@ -117,8 +125,8 @@ public class CraftlangCompiler {
 				// Summon the stack frame entity
 				writeln(
 					path[0],
-					"summon minecraft:area_effect_cloud ~ ~ ~ {Tags:[\"cr_frame\"]}" + NL
-						+ "execute as @e[tag=cr_frame] unless score @s cr_id matches 1.. store result score @s cr_id run scoreboard players add #cr cr_fp 1"
+					"summon minecraft:area_effect_cloud ~ ~ ~ {Tags:[\"cr_frame\"]}",
+					"execute as @e[tag=cr_frame] unless score @s cr_id matches -2147483648.. store result score @s cr_id run scoreboard players add #cr cr_fp 1"
 				);
 
 				// Declare the variables for the function arguments and initialize the scores of the stack frame
@@ -635,8 +643,8 @@ public class CraftlangCompiler {
 				}
 				writeln(
 					path[0],
-					"execute as @e[tag=cr_frame] if score @s cr_id = #cr cr_fp run kill @s" + NL
-						+ "scoreboard players remove #cr cr_fp 1"
+					"execute as @e[tag=cr_frame] if score @s cr_id = #cr cr_fp run kill @s",
+					"scoreboard players remove #cr cr_fp 1"
 				);
 			}
 		}
@@ -649,10 +657,10 @@ public class CraftlangCompiler {
 
 			writeln(
 				path,
-				"gamerule maxCommandChainLength 2147483647" + NL
-					+ "scoreboard objectives add cr_id dummy" + NL
-					+ "scoreboard objectives add cr_fp dummy" + NL
-					+ "scoreboard objectives add cr_negate dummy"
+				"gamerule maxCommandChainLength 2147483647",
+				"scoreboard objectives add cr_id dummy",
+				"scoreboard objectives add cr_fp dummy",
+				"scoreboard objectives add cr_negate dummy"
 			);
 
 			for (int i = 1, maxParameterCount = maxParameterCounts.getOrDefault(namespace, 0); i <= maxParameterCount; i++) {
@@ -669,10 +677,10 @@ public class CraftlangCompiler {
 
 			writeln(
 				path,
-				"scoreboard objectives add cr_return_1 dummy" + NL
-					+ "scoreboard players set #cr cr_id 0" + NL
-					+ "scoreboard players set #cr cr_fp 0" + NL
-					+ "scoreboard players set #cr cr_negate -1"
+				"scoreboard objectives add cr_return_1 dummy",
+				"scoreboard players set #cr cr_id 0",
+				"scoreboard players set #cr cr_fp 0",
+				"scoreboard players set #cr cr_negate -1"
 			);
 		}
 	}
@@ -681,14 +689,12 @@ public class CraftlangCompiler {
 		compile(base, Arrays.asList(units));
 	}
 
-	private static void writeln(Path path, String string) throws IOException {
-		Files.write(
-			path,
-			(string + NL).getBytes(StandardCharsets.UTF_8),
-			StandardOpenOption.CREATE,
-			StandardOpenOption.WRITE,
-			StandardOpenOption.APPEND
-		);
+	private static void writeln(Path path, String... strings) throws IOException {
+		OpenOption[] options = {StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.APPEND};
+		for (String string : strings) {
+			Files.write(path, string.getBytes(StandardCharsets.UTF_8), options);
+			Files.write(path, NL.getBytes(StandardCharsets.UTF_8), options);
+		}
 	}
 
 	private static Namespace getCraftlangNamespace(Namespace namespace) {
