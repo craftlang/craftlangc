@@ -33,7 +33,7 @@ public class CraftlangCompiler {
 
 		Map<QualifiedName, Variable> globals = new HashMap<>();
 		Map<QualifiedName, FunctionDefinition> functions = new HashMap<>();
-		Map<QualifiedName, List<QualifiedName>> tags = new HashMap<>();
+		Map<QualifiedName, Set<QualifiedName>> tags = new HashMap<>();
 		Map<Namespace, Integer> maxParameterCounts = new HashMap<>();
 		Map<Namespace, Integer> maxLocalCounts = new HashMap<>();
 		Map<Namespace, Integer> maxStackCounts = new HashMap<>();
@@ -42,61 +42,71 @@ public class CraftlangCompiler {
 		// the maximum number of parameters function use, for each unit
 		for (Unit unit : units) {
 			Namespace namespace = unit.getNamespace();
-			String globalVarPrefix = "cr_" + Util.toBase62(namespace.hashCode()) + "_";
+
+			QualifiedName loadName = new QualifiedName(new Namespace("minecraft"), "load");
+			tags.putIfAbsent(loadName, new LinkedHashSet<>());
+			tags.get(loadName).add(new QualifiedName(getCraftlangNamespace(namespace), "load"));
 
 			for (VariableDeclarationStatement variableDeclaration : unit.getVariableDeclarations()) {
-				QualifiedName qualifiedName = new QualifiedName(namespace, variableDeclaration.getName());
+				QualifiedName variableName = new QualifiedName(namespace, variableDeclaration.getName());
 
-				if (globals.containsKey(qualifiedName)) {
-					throw new CompileException(variableDeclaration.getSource().getBeginIndex(), "Variable already defined: " + qualifiedName);
+				if (globals.containsKey(variableName)) {
+					throw new CompileException(variableDeclaration.getSource().getBeginIndex(), "Variable already defined: " + variableName);
 				}
 
-				globals.put(qualifiedName, new Variable(variableDeclaration.getType(), globalVarPrefix + (globals.size() + 1)));
+				globals.put(variableName, new Variable(variableDeclaration.getType(), "cr_" + Util.toBase62(namespace.hashCode()) + "_" + (globals.size() + 1)));
 			}
 
 			for (FunctionDefinition function : unit.getFunctions()) {
-				QualifiedName qualifiedName = new QualifiedName(namespace, function.getName());
+				QualifiedName functionName = new QualifiedName(namespace, function.getName());
 
-				if (functions.containsKey(qualifiedName)) {
-					throw new CompileException(function.getSource().getBeginIndex(), "Function already defined: " + qualifiedName);
+				if (functions.containsKey(functionName)) {
+					throw new CompileException(function.getSource().getBeginIndex(), "Function already defined: " + functionName);
 				}
 
-				functions.put(qualifiedName, function);
-				maxParameterCounts.put(namespace, Math.max(maxParameterCounts.getOrDefault(namespace, 0), function.getParameters().size()));
+				int parameterCount = function.getParameters().size();
+				List<QualifiedName> functionTags = function.getTags();
 
-				for (QualifiedName tag : function.getTags()) {
-					tags.putIfAbsent(tag, new ArrayList<>());
-					tags.get(tag).add(qualifiedName);
+				functions.put(functionName, function);
+				maxParameterCounts.put(namespace, Math.max(maxParameterCounts.getOrDefault(namespace, 0), parameterCount));
+
+				if (!functionTags.isEmpty()) {
+					if (parameterCount > 0) {
+						throw new CompileException(function.getSource().getBeginIndex(), "Can't tag a function with a non-empty parameter list");
+					}
+
+					for (QualifiedName tag : functionTags) {
+						tags.putIfAbsent(tag, new LinkedHashSet<>());
+						tags.get(tag).add(functionName);
+					}
 				}
 			}
 		}
 
 		// Generate the JSON tag files for each function
-		for (Map.Entry<QualifiedName, List<QualifiedName>> entry : tags.entrySet()) {
-			QualifiedName tag = entry.getKey();
-			List<QualifiedName> functionNames = entry.getValue();
-			Path tagPath = getTagPath(base, tag);
+		for (Map.Entry<QualifiedName, Set<QualifiedName>> entry : tags.entrySet()) {
+			Iterator<QualifiedName> functionNamesIterator = entry.getValue().iterator();
+			if (!functionNamesIterator.hasNext()) {
+				continue;
+			}
 
+			Path tagPath = getTagPath(base, entry.getKey());
 			writeln(
 				tagPath,
 				"{" + NL
 					+ TAB + "\"values\": [" + NL
-					+ TAB + TAB + "\"" + getMinecraftId(functionNames.get(0)) + "\""
+					+ TAB + TAB + "\"" + getMinecraftId(functionNamesIterator.next()) + "\""
 			);
-
-			for (int i = 1, functionNameCount = functionNames.size(); i < functionNameCount; i++) {
-				writeln(tagPath, "," + NL + TAB + TAB + "\"" + getMinecraftId(functionNames.get(i)) + "\"");
+			while (functionNamesIterator.hasNext()) {
+				writeln(tagPath, "," + NL + TAB + TAB + "\"" + getMinecraftId(functionNamesIterator.next()) + "\"");
 			}
-
-			writeln(tagPath, NL + TAB + "]" + NL + "}");
+			writeln(tagPath, TAB + "]" + NL + "}");
 		}
 
 		// Compile the functions of each unit
 		for (Unit unit : units) {
 			Namespace namespace = unit.getNamespace();
-			List<String> craftlangNamespaceComponents = new ArrayList<>(namespace.getComponents());
-			craftlangNamespaceComponents.add(".craftlang");
-			Namespace craftlangNamespace = new Namespace(craftlangNamespaceComponents);
+			Namespace craftlangNamespace = getCraftlangNamespace(namespace);
 
 			for (FunctionDefinition function : unit.getFunctions()) {
 				Path[] path = {getFunctionPath(base, new QualifiedName(namespace, function.getName()))};
@@ -104,14 +114,22 @@ public class CraftlangCompiler {
 				Deque<Variable> stack = new ArrayDeque<>();
 				int[] helperCount = {0};
 
-				// Declare the variables for the function arguments
+				// Summon the stack frame entity
+				writeln(
+					path[0],
+					"scoreboard players add #cr cr_sp 1" + NL
+						+ "summon minecraft:area_effect_cloud ~ ~ ~ {Tags:[\"cr_temp\"]}" + NL
+						+ "scoreboard players operation @e[tag=cr_temp] cr_id = #cr cr_sp" + NL
+						+ "tag @e remove cr_temp"
+				);
+
+				// Declare the variables for the function arguments and initialize the scores of the stack frame
 				List<Parameter> parameters = function.getParameters();
 				for (int i = 0, parameterCount = parameters.size(); i < parameterCount; i++) {
 					Parameter parameter = parameters.get(i);
-					locals.declareAndAssign(
-						parameter.getName(),
-						new Variable(parameter.getType(), "cr_arg_" + Util.toBase62(i + 1))
-					);
+					String id = "cr_arg_" + Util.toBase62(i + 1);
+					locals.declareAndAssign(parameter.getName(), new Variable(parameter.getType(), id));
+					writeln(path[0], "execute as @e if score @s cr_id = #cr cr_sp run scoreboard players operation @s " + id + " = #cr " + id);
 				}
 
 				// Declare the variable containing the returned value
@@ -228,6 +246,9 @@ public class CraftlangCompiler {
 								}
 								break;
 							case MINUS:
+								if (!type.equals(Type.INTEGER)) {
+									throw new CompileException(expression.getSource().getEndIndex(), "Unsupported operation");
+								}
 								writeln(path[0], "execute as @e if score @s cr_id = #cr cr_sp run scoreboard players operation @s " + operand.getId() + " *= #cr cr_negate");
 								break;
 							default:
@@ -269,14 +290,6 @@ public class CraftlangCompiler {
 							throw new CompileException(expression.getSource().getBeginIndex(), "Passed arguments don't match the function signature");
 						}
 
-						writeln(
-							path[0],
-							"scoreboard players add #cr cr_sp 1" + NL
-								+ "summon minecraft:area_effect_cloud ~ ~ ~ {Tags:[\"cr_temp\"]}" + NL
-								+ "scoreboard players operation @e[tag=cr_temp] cr_id = #cr cr_sp" + NL
-								+ "tag @e remove cr_temp"
-						);
-
 						for (int i = 0; i < argumentCount; i++) {
 							arguments.get(i).getExpression().accept(this);
 							Variable argument = stack.pop();
@@ -289,7 +302,7 @@ public class CraftlangCompiler {
 							switch (type) {
 								case BOOLEAN:
 								case INTEGER:
-									writeln(path[0], "execute as @e if score @s cr_id = #cr cr_sp run scoreboard players operation @s cr_arg_" + Util.toBase62(i + 1) + " = @s " + argument.getId());
+									writeln(path[0], "execute as @e if score @s cr_id = #cr cr_sp run scoreboard players operation #cr cr_arg_" + Util.toBase62(i + 1) + " = @s " + argument.getId());
 									break;
 								default:
 									assert false : type;
@@ -298,23 +311,6 @@ public class CraftlangCompiler {
 						}
 
 						writeln(path[0], "function " + getMinecraftId(functionName));
-
-						if (returnType != null) {
-							switch (returnType) {
-								case BOOLEAN:
-								case INTEGER:
-									writeln(path[0], "execute as @e if score @s cr_id = #cr cr_sp run scoreboard players operation #cr cr_return_1 = @s cr_return_1");
-									break;
-								default:
-									assert false : returnType;
-							}
-						}
-
-						writeln(
-							path[0],
-							"execute as @e if score @s cr_id = #cr cr_sp kill @s" + NL
-								+ "scoreboard players remove #cr cr_sp 1"
-						);
 
 						if (returnType != null) {
 							switch (returnType) {
@@ -329,7 +325,6 @@ public class CraftlangCompiler {
 									assert false : returnType;
 							}
 						}
-
 						return null;
 					}
 
@@ -341,33 +336,39 @@ public class CraftlangCompiler {
 
 						if (name.getNamespace() == null) {
 							variable = locals.get(name.getName());
-							local = true;
+
+							if (variable != null) {
+								local = true;
+							} else {
+								switch (name.getName()) {
+									case "true":
+										String id = "cr_stack_" + Util.toBase62(stack.size() + 1);
+										writeln(path[0], "execute as @e if score @s cr_id = #cr cr_sp run scoreboard players set @s " + id + " 1");
+										stack.push(new Variable(Type.BOOLEAN, id));
+										maxStackCounts.put(namespace, Math.max(maxStackCounts.getOrDefault(namespace, 0), stack.size()));
+										return null;
+									case "false":
+										id = "cr_stack_" + Util.toBase62(stack.size() + 1);
+										writeln(path[0], "execute as @e if score @s cr_id = #cr cr_sp run scoreboard players set @s " + id + " 0");
+										stack.push(new Variable(Type.BOOLEAN, id));
+										maxStackCounts.put(namespace, Math.max(maxStackCounts.getOrDefault(namespace, 0), stack.size()));
+										return null;
+									default:
+										variable = globals.get(new QualifiedName(namespace, name.getName()));
+										local = false;
+										break;
+								}
+							}
 						} else {
 							variable = globals.get(name);
 							local = false;
 						}
 
 						if (variable == null) {
-							switch (name.toString()) {
-								case "true":
-									String id = "cr_stack_" + Util.toBase62(stack.size() + 1);
-									writeln(path[0], "execute as @e if score @s cr_id = #cr cr_sp run scoreboard players set @s " + id + " 1");
-									stack.push(new Variable(Type.INTEGER, id));
-									maxStackCounts.put(namespace, Math.max(maxStackCounts.getOrDefault(namespace, 0), stack.size()));
-									return null;
-								case "false":
-									id = "cr_stack_" + Util.toBase62(stack.size() + 1);
-									writeln(path[0], "execute as @e if score @s cr_id = #cr cr_sp run scoreboard players set @s " + id + " 0");
-									stack.push(new Variable(Type.INTEGER, id));
-									maxStackCounts.put(namespace, Math.max(maxStackCounts.getOrDefault(namespace, 0), stack.size()));
-									return null;
-								default:
-									throw new CompileException(expression.getSource().getBeginIndex(), "Undeclared variable " + name);
-							}
+							throw new CompileException(expression.getSource().getBeginIndex(), "Undeclared variable " + name);
 						}
 
 						Type type = variable.getType();
-
 						switch (type) {
 							case BOOLEAN:
 							case INTEGER:
@@ -406,6 +407,7 @@ public class CraftlangCompiler {
 						int localCount = maxLocalCounts.getOrDefault(namespace, 0) + 1;
 						maxLocalCounts.put(namespace, localCount);
 						String id = "cr_local_" + Util.toBase62(localCount);
+						locals.declareAndAssign(name, new Variable(type, id));
 
 						switch (type) {
 							case BOOLEAN:
@@ -416,8 +418,6 @@ public class CraftlangCompiler {
 								assert false : type;
 								break;
 						}
-
-						locals.declareAndAssign(name, new Variable(type, id));
 						return null;
 					}
 
@@ -466,14 +466,60 @@ public class CraftlangCompiler {
 							throw new CompileException(statement.getSource().getBeginIndex(), "Assigned value doesn't match the expected type");
 						}
 
-						switch (type) {
-							case BOOLEAN:
-							case INTEGER:
+						switch (statement.getOperator()) {
+							case EQUAL:
 								writeln(path[0], "execute as @e if score @s cr_id = #cr cr_sp run scoreboard players operation " + (local ? "@s " : "#cr ") + variable.getId() + " = @s " + value.getId());
 								break;
-							default:
-								assert false : type;
+							case PLUS_EQUAL:
+								if (!type.equals(Type.INTEGER)) {
+									throw new CompileException(statement.getSource().getBeginIndex(), "Unsupported operation");
+								}
+								writeln(path[0], "execute as @e if score @s cr_id = #cr cr_sp run scoreboard players operation " + (local ? "@s " : "#cr ") + variable.getId() + " += @s " + value.getId());
 								break;
+							case MINUS_EQUAL:
+								if (!type.equals(Type.INTEGER)) {
+									throw new CompileException(statement.getSource().getBeginIndex(), "Unsupported operation");
+								}
+								writeln(path[0], "execute as @e if score @s cr_id = #cr cr_sp run scoreboard players operation " + (local ? "@s " : "#cr ") + variable.getId() + " -= @s " + value.getId());
+								break;
+							case TIMES_EQUAL:
+								if (!type.equals(Type.INTEGER)) {
+									throw new CompileException(statement.getSource().getBeginIndex(), "Unsupported operation");
+								}
+								writeln(path[0], "execute as @e if score @s cr_id = #cr cr_sp run scoreboard players operation " + (local ? "@s " : "#cr ") + variable.getId() + " *= @s " + value.getId());
+								break;
+							case DIVIDE_EQUAL:
+								if (!type.equals(Type.INTEGER)) {
+									throw new CompileException(statement.getSource().getBeginIndex(), "Unsupported operation");
+								}
+								writeln(path[0], "execute as @e if score @s cr_id = #cr cr_sp run scoreboard players operation " + (local ? "@s " : "#cr ") + variable.getId() + " /= @s " + value.getId());
+								break;
+							case REMAINDER_EQUAL:
+								if (!type.equals(Type.INTEGER)) {
+									throw new CompileException(statement.getSource().getBeginIndex(), "Unsupported operation");
+								}
+								writeln(path[0], "execute as @e if score @s cr_id = #cr cr_sp run scoreboard players operation " + (local ? "@s " : "#cr ") + variable.getId() + " %= @s " + value.getId());
+								break;
+							case AND_EQUAL:
+								if (!type.equals(Type.BOOLEAN)) {
+									throw new CompileException(statement.getSource().getBeginIndex(), "Unsupported operation");
+								}
+								writeln(path[0], "execute as @e if score @s cr_id = #cr cr_sp run scoreboard players operation " + (local ? "@s " : "#cr ") + variable.getId() + " *= @s " + value.getId());
+								break;
+							case XOR_EQUAL:
+								if (!type.equals(Type.BOOLEAN)) {
+									throw new CompileException(statement.getSource().getBeginIndex(), "Unsupported operation");
+								}
+								writeln(path[0], "execute as @e if score @s cr_id = #cr cr_sp store success score " + (local ? "@s " : "#cr ") + variable.getId() + " if score @s " + variable.getId() + " != @s " + value.getId());
+								break;
+							case OR_EQUAL:
+								if (!type.equals(Type.BOOLEAN)) {
+									throw new CompileException(statement.getSource().getBeginIndex(), "Unsupported operation");
+								}
+								writeln(path[0], "execute as @e if score @s cr_id = #cr cr_sp store success score " + (local ? "@s " : "#cr ") + variable.getId() + " unless entity @e[scores={" + variable.getId() + "=0," + value.getId() + "=0}]");
+								break;
+							default:
+								assert false : statement.getOperator();
 						}
 						return null;
 					}
@@ -519,22 +565,28 @@ public class CraftlangCompiler {
 
 					@Override
 					public Void visitWhileStatement(WhileStatement statement) throws IOException {
+						QualifiedName helper1Name = new QualifiedName(craftlangNamespace, function.getName() + "." + Util.toBase62(++helperCount[0]));
+						String helper1MinecraftId = getMinecraftId(helper1Name);
+						writeln(path[0], "function " + helper1MinecraftId);
+
+						Path p = path[0];
+						path[0] = getFunctionPath(base, helper1Name);
+
 						statement.getCondition().accept(expressionCompiler);
 						Variable condition = stack.pop();
 						if (!condition.getType().equals(Type.BOOLEAN)) {
 							throw new CompileException(statement.getCondition().getSource().getBeginIndex(), "Not a boolean expression");
 						}
 
-						QualifiedName helperName = new QualifiedName(craftlangNamespace, function.getName() + "." + Util.toBase62(++helperCount[0]));
-						writeln(path[0], "execute as @e if score @s cr_id = #cr cr_sp if score @s " + condition.getId() + " matches 1 run function " + getMinecraftId(helperName));
-
-						Path p = path[0];
-						path[0] = getFunctionPath(base, helperName);
+						QualifiedName helper2Name = new QualifiedName(craftlangNamespace, function.getName() + "." + Util.toBase62(++helperCount[0]));
+						writeln(path[0], "execute as @e if score @s cr_id = #cr cr_sp if score @s " + condition.getId() + " matches 1 run function " + getMinecraftId(helper2Name));
+						path[0] = getFunctionPath(base, helper2Name);
 
 						for (Statement s : statement.getBody()) {
 							s.accept(this);
 						}
 
+						writeln(path[0], "function " + helper1MinecraftId);
 						path[0] = p;
 						return null;
 					}
@@ -574,6 +626,16 @@ public class CraftlangCompiler {
 				for (Statement statement : function.getBody()) {
 					statement.accept(statementCompiler);
 				}
+
+				// Kill the stack frame entity
+				if (returnType != null) {
+					writeln(path[0], "execute as @e if score @s cr_id = #cr cr_sp run scoreboard players operation #cr cr_return_1 = @s cr_return_1");
+				}
+				writeln(
+					path[0],
+					"execute as @e if score @s cr_id = #cr cr_sp run kill @s" + NL
+						+ "scoreboard players remove #cr cr_sp 1"
+				);
 			}
 		}
 
@@ -581,9 +643,7 @@ public class CraftlangCompiler {
 		// pass arguments (cr_arg_<n>), keep local variables (cr_local_<n>) and return from a function (cr_return_1)
 		for (Unit unit : units) {
 			Namespace namespace = unit.getNamespace();
-			List<String> craftlangNamespaceComponents = new ArrayList<>(namespace.getComponents());
-			craftlangNamespaceComponents.add(".craftlang");
-			Path path = getFunctionPath(base, new QualifiedName(new Namespace(craftlangNamespaceComponents), "load"));
+			Path path = getFunctionPath(base, new QualifiedName(getCraftlangNamespace(namespace), "load"));
 
 			writeln(
 				path,
@@ -627,6 +687,12 @@ public class CraftlangCompiler {
 			StandardOpenOption.WRITE,
 			StandardOpenOption.APPEND
 		);
+	}
+
+	private static Namespace getCraftlangNamespace(Namespace namespace) {
+		List<String> craftlangNamespaceComponents = new ArrayList<>(namespace.getComponents());
+		craftlangNamespaceComponents.add(".craftlang");
+		return new Namespace(craftlangNamespaceComponents);
 	}
 
 	private static Path getFunctionPath(Path base, QualifiedName functionName) throws IOException {
