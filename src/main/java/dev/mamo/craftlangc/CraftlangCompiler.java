@@ -236,7 +236,7 @@ public class CraftlangCompiler {
 					@Override
 					public Void visitUnaryExpression(UnaryExpression expression) throws IOException {
 						expression.getOperand().accept(this);
-						Variable operand = stack.pop();
+						Variable operand = stack.getFirst();
 						Type type = operand.getType();
 
 						switch (expression.getOperator()) {
@@ -259,7 +259,7 @@ public class CraftlangCompiler {
 								writeln(
 									path[0],
 									"execute as @e[tag=cr_frame] if score @s cr_id = #cr cr_fp run scoreboard players set @s " + id + " -1",
-									"execute as @e[tag=cr_frame] if score @s cr_id = #cr cr_fp run scoreboard players operation @s " + operand.getId() + " *= @s" + id
+									"execute as @e[tag=cr_frame] if score @s cr_id = #cr cr_fp run scoreboard players operation @s " + operand.getId() + " *= @s " + id
 								);
 								break;
 							default:
