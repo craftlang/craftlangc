@@ -54,7 +54,15 @@ public class CraftlangCompiler {
 					throw new CompileException(variableDeclaration.getSource().getBeginIndex(), "Variable already defined: " + variableName);
 				}
 
-				globals.put(variableName, new Variable(variableDeclaration.getType(), "cr_" + Util.toBase62(namespace.hashCode()) + "_" + (globals.size() + 1)));
+				String hash = Util.toBase62(namespace.hashCode());
+				switch (hash) {
+					case "arg":
+					case "stack":
+					case "ret":
+						hash = "0" + hash;
+						break;
+				}
+				globals.put(variableName, new Variable(variableDeclaration.getType(), "cr_" + hash + "_" + Util.toBase62(globals.size() + 1)));
 			}
 
 			for (FunctionDefinition function : unit.getFunctions()) {
@@ -141,7 +149,7 @@ public class CraftlangCompiler {
 				// Declare the variable containing the returned value
 				Type returnType = function.getReturnType();
 				if (returnType != null) {
-					locals[0].declareAndAssign(function.getName(), new Variable(returnType, "cr_return_1"));
+					locals[0].declareAndAssign(function.getName(), new Variable(returnType, "cr_ret_1"));
 				}
 
 				// The expression compiler. Needed later
@@ -329,7 +337,7 @@ public class CraftlangCompiler {
 								case BOOLEAN:
 								case INTEGER:
 									String id = "cr_stack_" + Util.toBase62(stack.size() + 1);
-									writeln(path[0], "execute as @e[tag=cr_frame] if score @s cr_id = #cr cr_fp run scoreboard players operation @s " + id + " = #cr cr_return_1");
+									writeln(path[0], "execute as @e[tag=cr_frame] if score @s cr_id = #cr cr_fp run scoreboard players operation @s " + id + " = #cr cr_ret_1");
 									stack.push(new Variable(returnType, id));
 									maxStackCounts.put(namespace, Math.max(maxStackCounts.getOrDefault(namespace, 0), stack.size()));
 									break;
@@ -654,7 +662,7 @@ public class CraftlangCompiler {
 
 				// Kill the stack frame entity
 				if (returnType != null) {
-					writeln(path[0], "execute as @e[tag=cr_frame] if score @s cr_id = #cr cr_fp run scoreboard players operation #cr cr_return_1 = @s cr_return_1");
+					writeln(path[0], "execute as @e[tag=cr_frame] if score @s cr_id = #cr cr_fp run scoreboard players operation #cr cr_ret_1 = @s cr_ret_1");
 				}
 				writeln(
 					path[0],
@@ -665,7 +673,7 @@ public class CraftlangCompiler {
 		}
 
 		// Generate the loader function for each unit, that is, a function which creates the objectives necessary to
-		// pass arguments (cr_arg_<n>), keep local variables (cr_local_<n>) and return from a function (cr_return_1)
+		// pass arguments (cr_arg_<n>), keep local variables (cr_local_<n>) and return from a function (cr_ret_1)
 		for (Unit unit : units) {
 			Namespace namespace = unit.getNamespace();
 			Path path = getFunctionPath(base, new QualifiedName(getCraftlangNamespace(namespace), "load"));
@@ -676,6 +684,10 @@ public class CraftlangCompiler {
 				"scoreboard objectives add cr_id dummy",
 				"scoreboard objectives add cr_fp dummy"
 			);
+
+			for (Variable global : globals.values()) {
+				writeln(path, "scoreboard objectives add " + global.getId() + " dummy");
+			}
 
 			for (int i = 1, maxParameterCount = maxParameterCounts.getOrDefault(namespace, 0); i <= maxParameterCount; i++) {
 				writeln(path, "scoreboard objectives add cr_arg_" + Util.toBase62(i) + " dummy");
@@ -691,7 +703,7 @@ public class CraftlangCompiler {
 
 			writeln(
 				path,
-				"scoreboard objectives add cr_return_1 dummy",
+				"scoreboard objectives add cr_ret_1 dummy",
 				"scoreboard players set #cr cr_id 0",
 				"scoreboard players set #cr cr_fp 0"
 			);
