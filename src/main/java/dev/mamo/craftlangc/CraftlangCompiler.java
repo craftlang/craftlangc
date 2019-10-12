@@ -716,9 +716,11 @@ public class CraftlangCompiler {
 
 	private static void writeln(Path path, String... strings) throws IOException {
 		OpenOption[] options = {StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.APPEND};
+		byte[] nl = NL.getBytes(StandardCharsets.UTF_8);
+
 		for (String string : strings) {
 			Files.write(path, string.getBytes(StandardCharsets.UTF_8), options);
-			Files.write(path, NL.getBytes(StandardCharsets.UTF_8), options);
+			Files.write(path, nl, options);
 		}
 	}
 
