@@ -16,6 +16,8 @@ public class CraftlangParser {
 	private static final Parser UNIT;
 
 	static {
+		int[] indentValue = {0};
+
 		Parser space = alternative(
 			character(' '),
 			character('\t')
@@ -26,7 +28,7 @@ public class CraftlangParser {
 
 		Parser indent = context -> {
 			int initialPosition = context.getPosition();
-			if (getIndentValue(optionalSpaces.parse(context).getContent()) == (int) context.get("indentValue", 0)) {
+			if (getIndent(optionalSpaces.parse(context).getContent()) == indentValue[0]) {
 				return new ParseNode(context.getSource(), initialPosition, context.getPosition());
 			} else {
 				context.setPosition(initialPosition);
@@ -240,15 +242,15 @@ public class CraftlangParser {
 
 		Parser body = labeled(L.BODY, context -> {
 			int initialPosition = context.getPosition();
-			int currentIndent = (int) context.get("indentValue", 0);
-			int newIndent = getIndentValue(optionalSpaces.parse(context).getContent());
+			int currentIndent = indentValue[0];
+			int newIndent = getIndent(optionalSpaces.parse(context).getContent());
 
 			if (newIndent <= currentIndent) {
 				context.setPosition(initialPosition);
 				return null;
 			}
 
-			context.set("indentValue", newIndent);
+			indentValue[0] = newIndent;
 
 			ParseNode parsed = sequence(
 				statement,
@@ -259,7 +261,7 @@ public class CraftlangParser {
 				))
 			).parse(context);
 
-			context.set("indentValue", currentIndent);
+			indentValue[0] = currentIndent;
 			return parsed;
 		});
 
@@ -1029,7 +1031,7 @@ public class CraftlangParser {
 		return new Namespace(components);
 	}
 
-	private static int getIndentValue(String spaces) {
+	private static int getIndent(String spaces) {
 		int indentValue = 0;
 		for (int i = 0, spacesLength = spaces.length(); i < spacesLength; i++) {
 			if (spaces.charAt(i) == '\t') {

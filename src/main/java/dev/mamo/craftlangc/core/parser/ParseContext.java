@@ -5,7 +5,6 @@ import java.util.*;
 
 public class ParseContext implements Serializable {
 	private final String source;
-	private final Map<String, Object> data = new HashMap<>();
 	private int position = 0;
 	private Error furthestError = null;
 
@@ -72,18 +71,6 @@ public class ParseContext implements Serializable {
 				}
 			}
 		}
-	}
-
-	public void set(String key, Object value) {
-		data.put(key, value);
-	}
-
-	public Object get(String key, Object defaultValue) {
-		return data.getOrDefault(key, defaultValue);
-	}
-
-	public Object get(String key) {
-		return data.get(key);
 	}
 
 	@Override
