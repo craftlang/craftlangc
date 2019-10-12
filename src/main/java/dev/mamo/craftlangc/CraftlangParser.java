@@ -845,7 +845,9 @@ public class CraftlangParser {
 		for (ParseNode child : expression.getChildren()) {
 			switch (child.getLabel()) {
 				case L.MULTIPLICATIVE_EXPRESSION:
-					result = result == null ? parseMultiplicativeExpression(child) : new BinaryExpression(child, result, operator, parseMultiplicativeExpression(child));
+					result = result == null
+						? parseMultiplicativeExpression(child)
+						: new BinaryExpression(child, result, operator, parseMultiplicativeExpression(child));
 					break;
 				case L.OPERATOR:
 					operator = parseBinaryOperator(child);
