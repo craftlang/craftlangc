@@ -58,7 +58,7 @@ public class Util {
 			}
 		}
 
-		return result.append("\"").toString();
+		return result.append('"').toString();
 	}
 
 	public static String toBase62(int integer) {

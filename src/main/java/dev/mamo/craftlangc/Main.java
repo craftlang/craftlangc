@@ -50,7 +50,7 @@ public class Main {
 						zip = true;
 						break;
 					default:
-						System.err.println("Invalid option: " + Util.quote(arg) + ".");
+						System.err.println("Invalid option: " + Util.quote(arg) + '.');
 						System.err.println("Try \"craftlangc --help\" for more information.");
 						System.exit(1);
 						break;
@@ -81,7 +81,7 @@ public class Main {
 							zip = true;
 							break;
 						default:
-							System.err.println("Invalid option: " + Util.quote(Character.toString(character)) + ".");
+							System.err.println("Invalid option: " + Util.quote(Character.toString(character)) + '.');
 							System.err.println("Try \"craftlangc --help\" for more information.");
 							System.exit(1);
 							break;
@@ -140,7 +140,7 @@ public class Main {
 					try {
 						units.add(CraftlangParser.parse(context));
 					} catch (ParseException ex) {
-						System.err.print("Error while parsing source file " + source + ":");
+						System.err.println("Error while parsing source file " + source + ':');
 						System.err.println("[" + Util.getRC(context.getSource(), ex.getPosition(), NL_REGEX) + "] " + ex.getMessage());
 						System.exit(1);
 					}
@@ -172,7 +172,7 @@ public class Main {
 			}
 		} catch (CompileException ex) {
 			System.err.println("Error while compiling:");
-			System.err.println("[" + ex.getPosition() + "] " + ex.getMessage());
+			System.err.println('[' + ex.getPosition() + "] " + ex.getMessage());
 			try {
 				Util.delete(destination);
 			} catch (IOException ignored) {}
