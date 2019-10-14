@@ -249,150 +249,27 @@ is _not_ a valid statement!
 Craftlang supports the set of expressions defined below. Binary expressions with the same precedence level are always
 left-associative. The semantic of each expression is equivalent to that of the C programming language.
 
-<table>
-	<thead>
-		<tr>
-			<th>Precedence</th>
-			<th>Expression</th>
-			<th>Syntax</th>
-			<th>Requires</th>
-			<th>Produces</th>
-		</tr>
-	</thead>
-	<tr>
-		<td>7</td>
-		<td>Unary</td>
-		<td><code>+&lt;operand&gt;</code></td>
-		<td><code>int</code></td>
-		<td><code>int</code></td>
-	</tr>
-	<tr>
-		<td>7</td>
-		<td>Unary</td>
-		<td><code>-&lt;operand&gt;</code></td>
-		<td><code>int</code></td>
-		<td><code>int</code></td>
-	</tr>
-	<tr>
-		<td>7</td>
-		<td>Unary</td>
-		<td><code>!&lt;operand&gt;</code></td>
-		<td><code>bool</code></td>
-		<td><code>bool</code></td>
-	</tr>
-	<tr>
-		<td>6</td>
-		<td>Multiplicative</td>
-		<td><code>&lt;left&gt; * &lt;right&gt;</code></td>
-		<td><code>int</code>, <code>int</code></td>
-		<td><code>int</code></td>
-	</tr>
-	<tr>
-		<td>6</td>
-		<td>Multiplicative</td>
-		<td><code>&lt;left&gt; / &lt;right&gt;</code></td>
-		<td><code>int</code>, <code>int</code></td>
-		<td><code>int</code></td>
-	</tr>
-	<tr>
-		<td>6</td>
-		<td>Multiplicative</td>
-		<td><code>&lt;left&gt; % &lt;right&gt;</code></td>
-		<td><code>int</code>, <code>int</code></td>
-		<td><code>int</code></td>
-	</tr>
-	<tr>
-		<td>5</td>
-		<td>Additive</td>
-		<td><code>&lt;left&gt; + &lt;right&gt;</code></td>
-		<td><code>int</code>, <code>int</code></td>
-		<td><code>int</code></td>
-	</tr>
-	<tr>
-		<td>5</td>
-		<td>Additive</td>
-		<td><code>&lt;left&gt; - &lt;right&gt;</code></td>
-		<td><code>int</code>, <code>int</code></td>
-		<td><code>int</code></td>
-	</tr>
-	<tr>
-		<td>4</td>
-		<td>And</td>
-		<td><code>&lt;left&gt; &amp; &lt;right&gt;</code></td>
-		<td><code>bool</code>, <code>bool</code></td>
-		<td><code>bool</code></td>
-	</tr>
-	<tr>
-		<td>3</td>
-		<td>Xor</td>
-		<td><code>&lt;left&gt; ^ &lt;right&gt;</code></td>
-		<td><code>bool</code>, <code>bool</code></td>
-		<td><code>bool</code></td>
-	</tr>
-	<tr>
-		<td>2</td>
-		<td>Or</td>
-		<td><code>&lt;left&gt; | &lt;right&gt;</code></td>
-		<td><code>bool</code>, <code>bool</code></td>
-		<td><code>bool</code></td>
-	</tr>
-	<tr>
-		<td>1</td>
-		<td>Comparison</td>
-		<td><code>&lt;left&gt; == &lt;right&gt;</code></td>
-		<td><code>int</code>, <code>int</code></td>
-		<td><code>bool</code></td>
-	</tr>
-	<tr>
-		<td>1</td>
-		<td>Comparison</td>
-		<td><code>&lt;left&gt; == &lt;right&gt;</code></td>
-		<td><code>bool</code>, <code>bool</code></td>
-		<td><code>bool</code></td>
-	</tr>
-	<tr>
-		<td>1</td>
-		<td>Comparison</td>
-		<td><code>&lt;left&gt; != &lt;right&gt;</code></td>
-		<td><code>int</code>, <code>int</code></td>
-		<td><code>bool</code></td>
-	</tr>
-	<tr>
-		<td>1</td>
-		<td>Comparison</td>
-		<td><code>&lt;left&gt; != &lt;right&gt;</code></td>
-		<td><code>bool</code>, <code>bool</code></td>
-		<td><code>bool</code></td>
-	</tr>
-	<tr>
-		<td>1</td>
-		<td>Comparison</td>
-		<td><code>&lt;left&gt; &lt;= &lt;right&gt;</code></td>
-		<td><code>int</code>, <code>int</code></td>
-		<td><code>bool</code></td>
-	</tr>
-	<tr>
-		<td>1</td>
-		<td>Comparison</td>
-		<td><code>&lt;left&gt; &lt; &lt;right&gt;</code></td>
-		<td><code>int</code>, <code>int</code></td>
-		<td><code>bool</code></td>
-	</tr>
-	<tr>
-		<td>1</td>
-		<td>Comparison</td>
-		<td><code>&lt;left&gt; &gt;= &lt;right&gt;</code></td>
-		<td><code>int</code>, <code>int</code></td>
-		<td><code>bool</code></td>
-	</tr>
-	<tr>
-		<td>1</td>
-		<td>Comparison</td>
-		<td><code>&lt;left&gt; &gt; &lt;right&gt;</code></td>
-		<td><code>int</code>, <code>int</code></td>
-		<td><code>bool</code></td>
-	</tr>
-</table>
+| Precedence |   Expression   |       Syntax        |    Requires    |  Produces  |
+|:----------:|:--------------:|:-------------------:|:--------------:|:----------:|
+|     7      |     Unary      |    `+<operand>`     |     `int`      |   `int`    |
+|     7      |     Unary      |    `-<operand>`     |     `int`      |   `int`    |
+|     7      |     Unary      |    `!<operand>`     |     `bool`     |   `bool`   |
+|     6      | Multiplicative | `<left> * <right>`  |  `int`, `int`  |   `int`    |
+|     6      | Multiplicative | `<left> / <right>`  |  `int`, `int`  |   `int`    |
+|     6      | Multiplicative | `<left> % <right>`  |  `int`, `int`  |   `int`    |
+|     5      |    Additive    | `<left> + <right>`  |  `int`, `int`  |   `int`    |
+|     5      |    Additive    | `<left> - <right>`  |  `int`, `int`  |   `int`    |
+|     4      |      And       | `<left> & <right>`  | `bool`, `bool` |   `bool`   |
+|     3      |      Xor       | `<left> ^ <right>`  | `bool`, `bool` |   `bool`   |
+|     2      |       Or       | `<left> \| <right>` | `bool`, `bool` |   `bool`   |
+|     1      |   Comparison   | `<left> == <right>` |  `int`, `int`  |   `bool`   |
+|     1      |   Comparison   | `<left> == <right>` | `bool`, `bool` |   `bool`   |
+|     1      |   Comparison   | `<left> != <right>` |  `int`, `int`  |   `bool`   |
+|     1      |   Comparison   | `<left> != <right>` | `bool`, `bool` |   `bool`   |
+|     1      |   Comparison   | `<left> <= <right>` |  `int`, `int`  |   `bool`   |
+|     1      |   Comparison   | `<left> < <right>`  |  `int`, `int`  |   `bool`   |
+|     1      |   Comparison   | `<left> >= <right>` |  `int`, `int`  |   `bool`   |
+|     1      |   Comparison   | `<left> > <right>`  |  `int`, `int`  |   `bool`   |
 
 Function calls, like `sum(3, 4)` and `math.trig.sin(45)` have a precedence value of 8 and are computed before unary
 expressions are evaluated. Parentheses can be used to force a specific order of operations; in particular, parenthesized
