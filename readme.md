@@ -275,8 +275,8 @@ Function calls, like `sum(3, 4)` and `math.trig.sin(45)` have a precedence value
 expressions are evaluated. Parentheses can be used to force a specific order of operations; in particular, parenthesized
 expressions have a precedence value of 9 and are evaluated even before function calls.
 
-As an example, the expression `2 + 3 * 4 * 5 <= sum(1, 2) / 3 - 1 != (factorial(4) - 2) / 3` would be equivalent to
-`((2 + ((3 * 4) * 5)) <= ((sum(1, 2) / 3) - 1)) != ((factorial(4) - 2) / 3)`.
+As an example, the expression `2 + 3 * 4 * 5 <= sum(1, 2) / 3 - 1 != (factorial(4) - 2 > 3)` would be equivalent to
+`((2 + ((3 * 4) * 5)) <= ((sum(1, 2) / 3) - 1)) != ((factorial(4) - 2) > 3)`.
 
 ## Control flow ##
 
