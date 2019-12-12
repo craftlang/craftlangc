@@ -1,7 +1,7 @@
 package dev.mamo.craftlangc;
 
-import dev.mamo.craftlangc.CraftlangCompiler.*;
-import dev.mamo.craftlangc.CraftlangParser.*;
+import dev.mamo.craftlangc.Compiler.*;
+import dev.mamo.craftlangc.Parser.*;
 import dev.mamo.craftlangc.ast.*;
 import dev.mamo.craftlangc.core.*;
 import dev.mamo.craftlangc.core.parser.*;
@@ -9,6 +9,7 @@ import dev.mamo.craftlangc.core.parser.*;
 import java.io.*;
 import java.net.*;
 import java.nio.charset.*;
+import java.nio.file.FileSystem;
 import java.nio.file.*;
 import java.util.*;
 
@@ -19,8 +20,6 @@ public class Main {
 	private Main() {}
 
 	public static void main(List<String> args) {
-		args.forEach(Objects::requireNonNull);
-
 		List<Path> sources = new ArrayList<>();
 		Path destination = null;
 		boolean force = false;
@@ -49,7 +48,7 @@ public class Main {
 						zip = true;
 						break;
 					default:
-						System.err.println("Invalid option: " + Util.quote(arg) + '.');
+						System.err.println("Invalid option: " + Utils.quote(arg) + '.');
 						System.err.println("Try \"craftlangc --help\" for more information.");
 						System.exit(1);
 						break;
@@ -80,7 +79,7 @@ public class Main {
 							zip = true;
 							break;
 						default:
-							System.err.println("Invalid option: " + Util.quote(Character.toString(character)) + '.');
+							System.err.println("Invalid option: " + Utils.quote(Character.toString(character)) + '.');
 							System.err.println("Try \"craftlangc --help\" for more information.");
 							System.exit(1);
 							break;
@@ -110,7 +109,7 @@ public class Main {
 			if (force) {
 				boolean isDirectory = Files.isDirectory(destination);
 				try {
-					Util.delete(destination);
+					Utils.delete(destination);
 				} catch (IOException ex) {
 					System.err.println("I/O error while deleting destination " + (isDirectory ? "directory" : "file") + ": " + ex.getMessage());
 					System.exit(1);
@@ -137,10 +136,10 @@ public class Main {
 					}
 
 					try {
-						units.add(CraftlangParser.parse(context));
+						units.add(Parser.parse(context));
 					} catch (ParseException ex) {
 						System.err.println("Error while parsing source file " + source + ':');
-						System.err.println("[" + Util.getRC(context.getSource(), ex.getPosition(), NL_REGEX) + "] " + ex.getMessage());
+						System.err.println("[" + Utils.getRC(context.getSource(), ex.getPosition(), NL_REGEX) + "] " + ex.getMessage());
 						System.exit(1);
 					}
 				});
@@ -163,23 +162,23 @@ public class Main {
 
 		try {
 			if (zip) {
-				try (FileSystem fs = FileSystems.newFileSystem(URI.create("jar:" + destination.toUri()), Util.map("create", "true"))) {
-					CraftlangCompiler.compile(fs.getPath(""), units);
+				try (FileSystem fs = FileSystems.newFileSystem(URI.create("jar:" + destination.toUri()), Utils.mapOf("create", "true"))) {
+					Compiler.compile(fs.getPath(""), units);
 				}
 			} else {
-				CraftlangCompiler.compile(destination, units);
+				Compiler.compile(destination, units);
 			}
 		} catch (CompileException ex) {
 			System.err.println("Error while compiling:");
-			System.err.println('[' + ex.getPosition() + "] " + ex.getMessage());
+			System.err.println("[" + ex.getPosition() + "] " + ex.getMessage());
 			try {
-				Util.delete(destination);
+				Utils.delete(destination);
 			} catch (IOException ignored) {}
 			System.exit(1);
 		} catch (IOException ex) {
 			System.err.println("I/O error while writing to destination: " + ex.getMessage());
 			try {
-				Util.delete(destination);
+				Utils.delete(destination);
 			} catch (IOException ignored) {}
 			System.exit(1);
 		}

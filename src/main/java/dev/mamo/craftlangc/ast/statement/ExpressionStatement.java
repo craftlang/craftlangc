@@ -7,12 +7,12 @@ import java.io.*;
 import java.util.*;
 
 public class ExpressionStatement implements Statement, Serializable {
-	private final ParseNode source;
-	private final Expression expression;
+	private ParseNode source;
+	private Expression expression;
 
 	public ExpressionStatement(ParseNode source, Expression expression) {
-		this.source = Objects.requireNonNull(source);
-		this.expression = Objects.requireNonNull(expression);
+		setSource(source);
+		setExpression(expression);
 	}
 
 	@Override
@@ -20,12 +20,21 @@ public class ExpressionStatement implements Statement, Serializable {
 		return source;
 	}
 
+	@Override
+	public void setSource(ParseNode source) {
+		this.source = Objects.requireNonNull(source);
+	}
+
 	public Expression getExpression() {
 		return expression;
 	}
 
+	public void setExpression(Expression expression) {
+		this.expression = Objects.requireNonNull(expression);
+	}
+
 	@Override
-	public <T, U extends Throwable> T accept(StatementVisitor<T, U> visitor) throws U {
+	public <T, E extends Throwable> T accept(StatementVisitor<T, E> visitor) throws E {
 		return visitor.visitExpressionStatement(this);
 	}
 

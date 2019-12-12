@@ -3,32 +3,34 @@ package dev.mamo.craftlangc;
 import dev.mamo.craftlangc.ast.*;
 import dev.mamo.craftlangc.ast.expression.*;
 import dev.mamo.craftlangc.ast.statement.*;
+import dev.mamo.craftlangc.core.*;
 import dev.mamo.craftlangc.core.parser.*;
 import dev.mamo.craftlangc.core.parser.ParseContext.Error;
 
 import java.math.*;
 import java.util.*;
+import java.util.function.*;
 
 import static dev.mamo.craftlangc.core.parser.Parsers.*;
 
-public class CraftlangParser {
+public class Parser {
 	private static final int TAB_WIDTH = 4;
-	private static final Parser UNIT;
+	private static final Function<ParseContext, ParseNode> UNIT;
 
 	static {
 		int[] indentValue = {0};
 
-		Parser space = alternative(
+		Function<ParseContext, ParseNode> space = alternative(
 			character(' '),
 			character('\t')
 		);
 
-		Parser spaces = oneOrMore(space);
-		Parser optionalSpaces = zeroOrMore(space);
+		Function<ParseContext, ParseNode> spaces = oneOrMore(space);
+		Function<ParseContext, ParseNode> optionalSpaces = zeroOrMore(space);
 
-		Parser indent = context -> {
+		Function<ParseContext, ParseNode> indent = context -> {
 			int initialPosition = context.getPosition();
-			if (getIndent(optionalSpaces.parse(context).getContent()) == indentValue[0]) {
+			if (getIndent(parse(optionalSpaces, context).getContent()) == indentValue[0]) {
 				return new ParseNode(context.getSource(), initialPosition, context.getPosition());
 			} else {
 				context.setPosition(initialPosition);
@@ -37,13 +39,13 @@ public class CraftlangParser {
 			}
 		};
 
-		Parser newline = alternative(
+		Function<ParseContext, ParseNode> newline = alternative(
 			string("\r\n"),
 			character('\r'),
 			character('\n')
 		);
 
-		Parser comment = sequence(
+		Function<ParseContext, ParseNode> comment = sequence(
 			character('#'),
 			zeroOrMore(sequence(
 				not(newline),
@@ -51,9 +53,9 @@ public class CraftlangParser {
 			))
 		);
 
-		Parser optionalComment = optional(comment);
+		Function<ParseContext, ParseNode> optionalComment = optional(comment);
 
-		Parser separator = sequence(
+		Function<ParseContext, ParseNode> separator = labeled(L.SEPARATOR, sequence(
 			optionalSpaces,
 			optionalComment,
 			newline,
@@ -62,11 +64,36 @@ public class CraftlangParser {
 				optionalComment,
 				newline
 			))
-		);
+		));
 
-		Parser optionalSeparator = optional(separator);
+		Function<ParseContext, ParseNode> optionalSeparator = optional(separator);
 
-		Parser integer = labeled(L.INTEGER, sequence(
+		Function<Function<ParseContext, ParseNode>, Function<ParseContext, ParseNode>> indented = parser -> context -> {
+			int initialPosition = context.getPosition();
+			int currentIndent = indentValue[0];
+			int newIndent = getIndent(parse(optionalSpaces, context).getContent());
+
+			if (newIndent <= currentIndent) {
+				context.setPosition(initialPosition);
+				return null;
+			}
+
+			indentValue[0] = newIndent;
+
+			ParseNode parsed = parse(sequence(
+				parser,
+				zeroOrMore(sequence(
+					separator,
+					indent,
+					parser
+				))
+			), context);
+
+			indentValue[0] = currentIndent;
+			return parsed;
+		};
+
+		Function<ParseContext, ParseNode> integer = labeled(L.INTEGER, sequence(
 			optional(alternative(
 				character('+'),
 				character('-')
@@ -74,14 +101,14 @@ public class CraftlangParser {
 			oneOrMore(range('0', '9'))
 		));
 
-		Parser name = labeled(L.NAME, oneOrMore(alternative(
+		Function<ParseContext, ParseNode> name = labeled(L.NAME, oneOrMore(alternative(
 			character('_'),
 			range('A', 'Z'),
 			range('a', 'z'),
 			range('0', '9')
 		)));
 
-		Parser namespace = labeled(L.NAMESPACE, sequence(
+		Function<ParseContext, ParseNode> multiName = labeled(L.MULTI_NAME, sequence(
 			name,
 			zeroOrMore(sequence(
 				optionalSpaces,
@@ -91,46 +118,27 @@ public class CraftlangParser {
 			))
 		));
 
-		Parser qualifiedName = labeled(L.QUALIFIED_NAME, sequence(
-			optional(sequence(
-				namespace,
-				optionalSpaces,
-				character('.'),
-				optionalSpaces
-			)),
-			name
-		));
+		ForwardFunction<ParseContext, ParseNode> expression = forward();
 
-		ForwardParser expression = forward();
-
-		Parser argument = alternative(
-			sequence(
-				string("ref"),
-				spaces,
-				labeled(L.REFERENCE, qualifiedName)
-			),
-			expression
-		);
-
-		Parser functionCall = labeled(L.FUNCTION_CALL, sequence(
-			qualifiedName,
+		Function<ParseContext, ParseNode> functionCall = labeled(L.FUNCTION_CALL, sequence(
+			multiName,
 			optionalSpaces,
 			character('('),
 			optionalSpaces,
 			optional(sequence(
-				argument,
+				expression,
 				zeroOrMore(sequence(
 					optionalSpaces,
 					character(','),
 					optionalSpaces,
-					argument
+					expression
 				)),
 				optionalSpaces
 			)),
 			character(')')
 		));
 
-		Parser command = labeled(L.COMMAND, sequence(
+		Function<ParseContext, ParseNode> command = labeled(L.COMMAND, sequence(
 			character('/'),
 			zeroOrMore(sequence(
 				not(newline),
@@ -138,7 +146,7 @@ public class CraftlangParser {
 			))
 		));
 
-		Parser unaryExpression = labeled(L.UNARY_EXPRESSION, sequence(
+		Function<ParseContext, ParseNode> unaryExpression = labeled(L.UNARY_EXPRESSION, sequence(
 			zeroOrMore(sequence(
 				not(integer),
 				labeled(L.OPERATOR, alternative(
@@ -158,11 +166,11 @@ public class CraftlangParser {
 				functionCall,
 				command,
 				integer,
-				qualifiedName
+				multiName
 			)
 		));
 
-		Parser multiplicativeExpression = labeled(L.MULTIPLICATIVE_EXPRESSION, sequence(
+		Function<ParseContext, ParseNode> multiplicativeExpression = labeled(L.MULTIPLICATIVE_EXPRESSION, sequence(
 			unaryExpression,
 			zeroOrMore(sequence(
 				optionalSpaces,
@@ -176,7 +184,7 @@ public class CraftlangParser {
 			))
 		));
 
-		Parser additiveExpression = labeled(L.ADDITIVE_EXPRESSION, sequence(
+		Function<ParseContext, ParseNode> additiveExpression = labeled(L.ADDITIVE_EXPRESSION, sequence(
 			multiplicativeExpression,
 			zeroOrMore(sequence(
 				optionalSpaces,
@@ -189,7 +197,7 @@ public class CraftlangParser {
 			))
 		));
 
-		Parser andExpression = labeled(L.AND_EXPRESSION, sequence(
+		Function<ParseContext, ParseNode> andExpression = labeled(L.AND_EXPRESSION, sequence(
 			additiveExpression,
 			zeroOrMore(sequence(
 				optionalSpaces,
@@ -199,7 +207,7 @@ public class CraftlangParser {
 			))
 		));
 
-		Parser xorExpression = labeled(L.XOR_EXPRESSION, sequence(
+		Function<ParseContext, ParseNode> xorExpression = labeled(L.XOR_EXPRESSION, sequence(
 			andExpression,
 			zeroOrMore(sequence(
 				optionalSpaces,
@@ -209,7 +217,7 @@ public class CraftlangParser {
 			))
 		));
 
-		Parser orExpression = labeled(L.OR_EXPRESSION, sequence(
+		Function<ParseContext, ParseNode> orExpression = labeled(L.OR_EXPRESSION, sequence(
 			xorExpression,
 			zeroOrMore(sequence(
 				optionalSpaces,
@@ -219,7 +227,7 @@ public class CraftlangParser {
 			))
 		));
 
-		Parser comparisonExpression = labeled(L.COMPARISON_EXPRESSION, sequence(
+		Function<ParseContext, ParseNode> comparisonExpression = labeled(L.COMPARISON_EXPRESSION, sequence(
 			orExpression,
 			zeroOrMore(sequence(
 				optionalSpaces,
@@ -236,36 +244,21 @@ public class CraftlangParser {
 			))
 		));
 
-		expression.setParser(comparisonExpression);
+		setParser(expression, comparisonExpression);
 
-		ForwardParser statement = forward();
+		ForwardFunction<ParseContext, ParseNode> statement = forward();
 
-		Parser body = labeled(L.BODY, context -> {
-			int initialPosition = context.getPosition();
-			int currentIndent = indentValue[0];
-			int newIndent = getIndent(optionalSpaces.parse(context).getContent());
+		Function<ParseContext, ParseNode> block = labeled(L.BLOCK, indented.apply(statement));
 
-			if (newIndent <= currentIndent) {
-				context.setPosition(initialPosition);
-				return null;
-			}
+		Function<ParseContext, ParseNode> nameAndType = labeled(L.NAME_AND_TYPE, sequence(
+			name,
+			optionalSpaces,
+			character(':'),
+			optionalSpaces,
+			labeled(L.TYPE, multiName)
+		));
 
-			indentValue[0] = newIndent;
-
-			ParseNode parsed = sequence(
-				statement,
-				zeroOrMore(sequence(
-					separator,
-					indent,
-					statement
-				))
-			).parse(context);
-
-			indentValue[0] = currentIndent;
-			return parsed;
-		});
-
-		Parser variableDeclarationAndAssignmentStatement = labeled(L.VARIABLE_DECLARATION_AND_ASSIGNMENT, sequence(
+		Function<ParseContext, ParseNode> variableDeclarationAndAssignmentStatement = labeled(L.VARIABLE_DECLARATION_AND_ASSIGNMENT, sequence(
 			string("var"),
 			spaces,
 			name,
@@ -281,18 +274,14 @@ public class CraftlangParser {
 			expression
 		));
 
-		Parser variableDeclarationStatement = labeled(L.VARIABLE_DECLARATION, sequence(
+		Function<ParseContext, ParseNode> variableDeclarationStatement = labeled(L.VARIABLE_DECLARATION, sequence(
 			string("var"),
 			spaces,
-			name,
-			optionalSpaces,
-			character(':'),
-			optionalSpaces,
-			labeled(L.TYPE, name)
+			nameAndType
 		));
 
-		Parser variableAssignmentStatement = labeled(L.VARIABLE_ASSIGNMENT, sequence(
-			qualifiedName,
+		Function<ParseContext, ParseNode> variableAssignmentStatement = labeled(L.VARIABLE_ASSIGNMENT, sequence(
+			multiName,
 			optionalSpaces,
 			labeled(L.OPERATOR, alternative(
 				character('='),
@@ -309,13 +298,13 @@ public class CraftlangParser {
 			expression
 		));
 
-		ForwardParser ifStatement = forward();
-		ifStatement.setParser(labeled(L.IF_STATEMENT, sequence(
+		ForwardFunction<ParseContext, ParseNode> ifStatement = forward();
+		setParser(ifStatement, labeled(L.IF_STATEMENT, sequence(
 			string("if"),
 			spaces,
 			expression,
 			separator,
-			labeled(L.IF_TRUE, body),
+			labeled(L.IF_TRUE, block),
 			optional(sequence(
 				separator,
 				indent,
@@ -327,24 +316,24 @@ public class CraftlangParser {
 					),
 					sequence(
 						separator,
-						labeled(L.IF_FALSE, body)
+						labeled(L.IF_FALSE, block)
 					)
 				)
 			))
 		)));
 
-		Parser whileStatement = labeled(L.WHILE_STATEMENT, sequence(
+		Function<ParseContext, ParseNode> whileStatement = labeled(L.WHILE_STATEMENT, sequence(
 			string("while"),
 			spaces,
 			expression,
 			separator,
-			body
+			block
 		));
 
-		Parser doWhileStatement = labeled(L.DO_WHILE_STATEMENT, sequence(
+		Function<ParseContext, ParseNode> doWhileStatement = labeled(L.DO_WHILE_STATEMENT, sequence(
 			string("do"),
 			separator,
-			body,
+			block,
 			separator,
 			indent,
 			string("while"),
@@ -352,7 +341,7 @@ public class CraftlangParser {
 			expression
 		));
 
-		statement.setParser(alternative(
+		setParser(statement, alternative(
 			variableDeclarationAndAssignmentStatement,
 			variableDeclarationStatement,
 			variableAssignmentStatement,
@@ -362,19 +351,19 @@ public class CraftlangParser {
 			expression
 		));
 
-		Parser parameter = labeled(L.PARAMETER, sequence(
+		Function<ParseContext, ParseNode> typeDeclaration = labeled(L.TYPE_DECLARATION, sequence(
+			string("type"),
+			spaces,
 			name,
-			optionalSpaces,
-			character(':'),
-			optionalSpaces,
-			labeled(L.TYPE, name)
+			separator,
+			indented.apply(nameAndType)
 		));
 
-		Parser functionDefinition = labeled(L.FUNCTION_DEFINITION, sequence(
+		Function<ParseContext, ParseNode> functionDefinition = labeled(L.FUNCTION_DEFINITION, sequence(
 			zeroOrMore(
 				sequence(string("tag"),
 					spaces,
-					labeled(L.TAG, qualifiedName),
+					labeled(L.TAG, multiName),
 					separator
 				)),
 			string("fun"),
@@ -384,12 +373,12 @@ public class CraftlangParser {
 			character('('),
 			optionalSpaces,
 			optional(sequence(
-				parameter,
+				nameAndType,
 				zeroOrMore(sequence(
 					optionalSpaces,
 					character(','),
 					optionalSpaces,
-					parameter
+					nameAndType
 				)),
 				optionalSpaces
 			)),
@@ -398,13 +387,14 @@ public class CraftlangParser {
 				optionalSpaces,
 				character(':'),
 				optionalSpaces,
-				labeled(L.RETURN_TYPE, name)
+				labeled(L.RETURN_TYPE, multiName)
 			)),
 			separator,
-			body
+			block
 		));
 
-		Parser part = alternative(
+		Function<ParseContext, ParseNode> part = alternative(
+			typeDeclaration,
 			variableDeclarationStatement,
 			functionDefinition
 		);
@@ -412,13 +402,10 @@ public class CraftlangParser {
 		UNIT = labeled(L.UNIT, sequence(
 			optionalSeparator,
 			optional(sequence(
-				alternative(
-					sequence(
-						string("namespace"),
-						spaces,
-						namespace
-					),
-					part
+				sequence(
+					string("namespace"),
+					spaces,
+					multiName
 				),
 				zeroOrMore(sequence(
 					separator,
@@ -432,27 +419,36 @@ public class CraftlangParser {
 		));
 	}
 
-	private CraftlangParser() {}
+	private Parser() {}
 
 	public static Unit parse(ParseContext context) {
-		ParseNode parsed = UNIT.parse(context);
+		ParseNode parsed = parse(UNIT, context);
 		if (parsed != null) {
-			return parseUnit(parsed.flatten());
+			parsed.flatten();
+			return parseUnit(parsed);
 		} else {
 			Error error = context.getFurthestError();
 			throw new ParseException(error.getPosition(), error.getMessage());
 		}
 	}
 
+	private static ParseNode parse(Function<ParseContext, ParseNode> parser, ParseContext context) {
+		return Parsers.parse(parser, context);
+	}
+
 	private static Unit parseUnit(ParseNode unit) {
 		Namespace namespace = null;
+		List<TypeDeclaration> typeDeclarations = new ArrayList<>();
 		List<VariableDeclarationStatement> variableDeclarations = new ArrayList<>();
 		List<FunctionDefinition> functions = new ArrayList<>();
 
 		for (ParseNode child : unit.getChildren()) {
 			switch (child.getLabel()) {
-				case L.NAMESPACE:
-					namespace = parseNamespace(child);
+				case L.MULTI_NAME:
+					namespace = new Namespace(parseMultiName(child));
+					break;
+				case L.TYPE_DECLARATION:
+					typeDeclarations.add(parseTypeDeclaration(child));
 					break;
 				case L.VARIABLE_DECLARATION:
 					variableDeclarations.add(parseVariableDeclaration(child));
@@ -466,36 +462,53 @@ public class CraftlangParser {
 			}
 		}
 
-		return new Unit(unit, namespace, variableDeclarations, functions);
+		return new Unit(unit, namespace, typeDeclarations, variableDeclarations, functions);
+	}
+
+	private static TypeDeclaration parseTypeDeclaration(ParseNode typeDefinition) {
+		String name = null;
+		List<TypeAndName> members = new ArrayList<>();
+
+		for (ParseNode child : typeDefinition.getChildren()) {
+			switch (child.getLabel()) {
+				case L.NAME:
+					name = child.getContent();
+					break;
+				case L.NAME_AND_TYPE:
+					members.add(parseNameAndType(child));
+					break;
+				default:
+					assert false : child.getLabel();
+					break;
+			}
+		}
+
+		return new TypeDeclaration(typeDefinition, name, members);
 	}
 
 	private static FunctionDefinition parseFunctionDefinition(ParseNode functionDefinition) {
-		List<QualifiedName> tags = new ArrayList<>();
-		Type returnType = null;
+		List<FQN> tags = new ArrayList<>();
+		FQN returnTypeFQN = null;
 		String name = null;
-		List<Parameter> parameters = new ArrayList<>();
+		List<TypeAndName> parameters = new ArrayList<>();
 		List<Statement> body = null;
 
 		for (ParseNode child : functionDefinition.getChildren()) {
 			switch (child.getLabel()) {
 				case L.TAG:
-					QualifiedName tag = parseQualifiedName(child);
-					if (tag.getNamespace() == null) {
-						tag = new QualifiedName(new Namespace("minecraft"), tag.getName());
-					}
-					tags.add(tag);
+					tags.add(new FQN(parseMultiName(child)));
 					break;
 				case L.RETURN_TYPE:
-					returnType = parseType(child);
+					returnTypeFQN = new FQN(parseMultiName(child));
 					break;
 				case L.NAME:
 					name = child.getContent();
 					break;
-				case L.PARAMETER:
-					parameters.add(parseParameter(child));
+				case L.NAME_AND_TYPE:
+					parameters.add(parseNameAndType(child));
 					break;
-				case L.BODY:
-					body = parseBody(child);
+				case L.BLOCK:
+					body = parseBlock(child);
 					break;
 				default:
 					assert false : child.getLabel();
@@ -504,17 +517,17 @@ public class CraftlangParser {
 		}
 
 		assert body != null;
-		return new FunctionDefinition(functionDefinition, tags, returnType, name, parameters, body);
+		return new FunctionDefinition(functionDefinition, tags, returnTypeFQN, name, parameters, body);
 	}
 
-	private static Parameter parseParameter(ParseNode parameter) {
-		Type type = null;
+	private static TypeAndName parseNameAndType(ParseNode parameter) {
+		FQN typeFQN = null;
 		String name = null;
 
 		for (ParseNode child : parameter.getChildren()) {
 			switch (child.getLabel()) {
 				case L.TYPE:
-					type = parseType(child);
+					typeFQN = new FQN(parseMultiName(child));
 					break;
 				case L.NAME:
 					name = child.getContent();
@@ -524,13 +537,13 @@ public class CraftlangParser {
 			}
 		}
 
-		return new Parameter(parameter, type, name);
+		return new TypeAndName(parameter, typeFQN, name);
 	}
 
-	private static List<Statement> parseBody(ParseNode body) {
+	private static List<Statement> parseBlock(ParseNode block) {
 		List<Statement> statements = new ArrayList<>();
 
-		for (ParseNode child : body.getChildren()) {
+		for (ParseNode child : block.getChildren()) {
 			switch (child.getLabel()) {
 				case L.VARIABLE_DECLARATION_AND_ASSIGNMENT:
 					statements.add(parseVariableDeclarationAndAssignment(child));
@@ -551,7 +564,7 @@ public class CraftlangParser {
 					statements.add(parseDoWhileStatement(child));
 					break;
 				case L.COMPARISON_EXPRESSION:
-					statements.add(new ExpressionStatement(body, parseComparisonExpression(child)));
+					statements.add(new ExpressionStatement(block, parseComparisonExpression(child)));
 					break;
 				default:
 					assert false : child.getLabel();
@@ -563,20 +576,20 @@ public class CraftlangParser {
 	}
 
 	private static VariableDeclarationAndAssignmentStatement parseVariableDeclarationAndAssignment(ParseNode statement) {
-		Type type = null;
-		String name = null;
-		Expression value = null;
+		FQN variableTypeFQN = null;
+		String variableName = null;
+		Expression assignedValue = null;
 
 		for (ParseNode child : statement.getChildren()) {
 			switch (child.getLabel()) {
 				case L.TYPE:
-					type = parseType(child);
+					variableTypeFQN = new FQN(parseMultiName(child));
 					break;
 				case L.NAME:
-					name = child.getContent();
+					variableName = child.getContent();
 					break;
 				case L.COMPARISON_EXPRESSION:
-					value = parseComparisonExpression(child);
+					assignedValue = parseComparisonExpression(child);
 					break;
 				default:
 					assert false : child.getLabel();
@@ -584,39 +597,31 @@ public class CraftlangParser {
 			}
 		}
 
-		return new VariableDeclarationAndAssignmentStatement(statement, type, name, value);
+		return new VariableDeclarationAndAssignmentStatement(statement, variableTypeFQN, variableName, assignedValue);
 	}
 
 	private static VariableDeclarationStatement parseVariableDeclaration(ParseNode statement) {
-		Type type = null;
-		String name = null;
-
-		for (ParseNode child : statement.getChildren()) {
-			switch (child.getLabel()) {
-				case L.TYPE:
-					type = parseType(child);
-					break;
-				case L.NAME:
-					name = child.getContent();
-					break;
-				default:
-					assert false : child.getLabel();
-					break;
+		List<ParseNode> children = statement.getChildren();
+		if (children.size() == 1) {
+			ParseNode child = children.get(0);
+			if (child.getLabel().equals(L.NAME_AND_TYPE)) {
+				TypeAndName typeAndName = parseNameAndType(children.get(0));
+				return new VariableDeclarationStatement(statement, typeAndName.getTypeFQN(), typeAndName.getName());
 			}
 		}
-
-		return new VariableDeclarationStatement(statement, type, name);
+		assert false;
+		return null;
 	}
 
 	private static VariableAssignmentStatement parseVariableAssignment(ParseNode statement) {
-		QualifiedName name = null;
+		FQN variableFQN = null;
 		AssignmentOperator operator = null;
 		Expression value = null;
 
 		for (ParseNode child : statement.getChildren()) {
 			switch (child.getLabel()) {
-				case L.QUALIFIED_NAME:
-					name = parseQualifiedName(child);
+				case L.MULTI_NAME:
+					variableFQN = new FQN(parseMultiName(child));
 					break;
 				case L.OPERATOR:
 					operator = parseAssignmentOperator(child);
@@ -630,7 +635,7 @@ public class CraftlangParser {
 			}
 		}
 
-		return new VariableAssignmentStatement(statement, name, operator, value);
+		return new VariableAssignmentStatement(statement, variableFQN, operator, value);
 	}
 
 	private static IfStatement parseIfStatement(ParseNode statement) {
@@ -644,10 +649,10 @@ public class CraftlangParser {
 					condition = parseComparisonExpression(child);
 					break;
 				case L.IF_TRUE:
-					ifTrue = parseBody(child);
+					ifTrue = parseBlock(child);
 					break;
 				case L.IF_FALSE:
-					ifFalse = parseBody(child);
+					ifFalse = parseBlock(child);
 					break;
 				case L.IF_STATEMENT:
 					ifFalse = new ArrayList<>();
@@ -672,8 +677,8 @@ public class CraftlangParser {
 				case L.COMPARISON_EXPRESSION:
 					condition = parseComparisonExpression(child);
 					break;
-				case L.BODY:
-					body = parseBody(child);
+				case L.BLOCK:
+					body = parseBlock(child);
 					break;
 				default:
 					assert false : child.getLabel();
@@ -691,8 +696,8 @@ public class CraftlangParser {
 
 		for (ParseNode child : statement.getChildren()) {
 			switch (child.getLabel()) {
-				case L.BODY:
-					body = parseBody(child);
+				case L.BLOCK:
+					body = parseBlock(child);
 					break;
 				case L.COMPARISON_EXPRESSION:
 					condition = parseComparisonExpression(child);
@@ -705,19 +710,6 @@ public class CraftlangParser {
 
 		assert body != null;
 		return new DoWhileStatement(statement, body, condition);
-	}
-
-	private static Type parseType(ParseNode type) {
-		switch (type.getContent()) {
-			case "bool":
-				return Type.BOOLEAN;
-			case "int":
-				return Type.INTEGER;
-			case "void":
-				return null;
-			default:
-				throw new ParseException(type.getBeginIndex(), "Illegal type: " + type.getContent());
-		}
 	}
 
 	private static AssignmentOperator parseAssignmentOperator(ParseNode operator) {
@@ -868,9 +860,7 @@ public class CraftlangParser {
 		for (ParseNode child : expression.getChildren()) {
 			switch (child.getLabel()) {
 				case L.UNARY_EXPRESSION:
-					result = result == null
-						? parseUnaryExpression(child)
-						: new BinaryExpression(child, result, operator, parseUnaryExpression(child));
+					result = result == null ? parseUnaryExpression(child) : new BinaryExpression(child, result, operator, parseUnaryExpression(child));
 					break;
 				case L.OPERATOR:
 					operator = parseBinaryOperator(child);
@@ -905,8 +895,8 @@ public class CraftlangParser {
 				case L.INTEGER:
 					result = new IntegerExpression(child, new BigInteger(child.getContent()).intValue());
 					break;
-				case L.QUALIFIED_NAME:
-					result = new VariableExpression(child, parseQualifiedName(child));
+				case L.MULTI_NAME:
+					result = new VariableExpression(child, new FQN(parseMultiName(child)));
 					break;
 				default:
 					assert false : child.getLabel();
@@ -921,20 +911,17 @@ public class CraftlangParser {
 		return result;
 	}
 
-	private static FunctionCallExpression parseFunctionCall(ParseNode functionCall) {
-		QualifiedName name = null;
-		List<Argument> arguments = new ArrayList<>();
+	private static CallExpression parseFunctionCall(ParseNode functionCall) {
+		FQN functionFQN = null;
+		List<Expression> arguments = new ArrayList<>();
 
 		for (ParseNode child : functionCall.getChildren()) {
 			switch (child.getLabel()) {
-				case L.QUALIFIED_NAME:
-					name = parseQualifiedName(child);
-					break;
-				case L.REFERENCE:
-					arguments.add(new Argument(child, true, new VariableExpression(child, parseQualifiedName(child))));
+				case L.MULTI_NAME:
+					functionFQN = new FQN(parseMultiName(child));
 					break;
 				case L.COMPARISON_EXPRESSION:
-					arguments.add(new Argument(child, false, parseComparisonExpression(child)));
+					arguments.add(parseComparisonExpression(child));
 					break;
 				default:
 					assert false : child.getLabel();
@@ -942,7 +929,7 @@ public class CraftlangParser {
 			}
 		}
 
-		return new FunctionCallExpression(functionCall, name, arguments);
+		return new CallExpression(functionCall, functionFQN, arguments);
 	}
 
 	private static BinaryOperator parseBinaryOperator(ParseNode operator) {
@@ -995,54 +982,30 @@ public class CraftlangParser {
 		}
 	}
 
-	private static QualifiedName parseQualifiedName(ParseNode qualifiedName) {
-		Namespace namespace = null;
-		String name = null;
+	private static List<String> parseMultiName(ParseNode multiName) {
+		List<String> result = new ArrayList<>();
 
-		for (ParseNode child : qualifiedName.getChildren()) {
-			switch (child.getLabel()) {
-				case L.NAMESPACE:
-					namespace = parseNamespace(child);
-					break;
-				case L.NAME:
-					name = child.getContent();
-					break;
-				default:
-					assert false : child.getLabel();
-					break;
+		for (ParseNode child : multiName.getChildren()) {
+			if (L.NAME.equals(child.getLabel())) {
+				result.add(child.getContent());
+			} else {
+				assert false : child.getLabel();
 			}
 		}
 
-		return new QualifiedName(namespace, name);
-	}
-
-	private static Namespace parseNamespace(ParseNode namespace) {
-		List<String> components = new ArrayList<>();
-
-		for (ParseNode child : namespace.getChildren()) {
-			switch (child.getLabel()) {
-				case L.NAME:
-					components.add(child.getContent());
-					break;
-				default:
-					assert false : child.getLabel();
-					break;
-			}
-		}
-
-		return new Namespace(components);
+		return result;
 	}
 
 	private static int getIndent(String spaces) {
-		int indentValue = 0;
+		int indent = 0;
 		for (int i = 0, spacesLength = spaces.length(); i < spacesLength; i++) {
 			if (spaces.charAt(i) == '\t') {
-				indentValue = (indentValue + TAB_WIDTH) / TAB_WIDTH * TAB_WIDTH;
+				indent = (indent + TAB_WIDTH) / TAB_WIDTH * TAB_WIDTH;
 			} else {
-				indentValue++;
+				indent++;
 			}
 		}
-		return indentValue;
+		return indent;
 	}
 
 	public static class ParseException extends RuntimeException {
@@ -1059,36 +1022,36 @@ public class CraftlangParser {
 	}
 
 	private static class L {
-		public static final String ADDITIVE_EXPRESSION = "additiveExpression";
-		public static final String AND_EXPRESSION = "andExpression";
-		public static final String BODY = "body";
-		public static final String COMMAND = "command";
-		public static final String COMPARISON_EXPRESSION = "comparisonExpression";
-		public static final String DO_WHILE_STATEMENT = "doWhileStatement";
-		public static final String FUNCTION_CALL = "functionCall";
-		public static final String FUNCTION_DEFINITION = "functionDefinition";
-		public static final String IF_FALSE = "ifFalse";
-		public static final String IF_STATEMENT = "ifStatement";
-		public static final String IF_TRUE = "ifTrue";
+		public static final String SEPARATOR = "separator";
 		public static final String INTEGER = "integer";
-		public static final String MULTIPLICATIVE_EXPRESSION = "multiplicativeExpression";
 		public static final String NAME = "name";
-		public static final String NAMESPACE = "namespace";
+		public static final String MULTI_NAME = "multi-name";
+		public static final String FUNCTION_CALL = "function call";
+		public static final String COMMAND = "command";
 		public static final String OPERATOR = "operator";
-		public static final String OR_EXPRESSION = "orExpression";
-		public static final String PARAMETER = "parameter";
-		public static final String QUALIFIED_NAME = "qualifiedName";
-		public static final String REFERENCE = "reference";
-		public static final String RETURN_TYPE = "returnType";
-		public static final String TAG = "tag";
+		public static final String UNARY_EXPRESSION = "unary expression";
+		public static final String MULTIPLICATIVE_EXPRESSION = "multiplicative expression";
+		public static final String ADDITIVE_EXPRESSION = "additive expression";
+		public static final String AND_EXPRESSION = "and expression";
+		public static final String XOR_EXPRESSION = "xor expression";
+		public static final String OR_EXPRESSION = "or expression";
+		public static final String COMPARISON_EXPRESSION = "comparison expression";
+		public static final String BLOCK = "block";
+		public static final String NAME_AND_TYPE = "name and type";
 		public static final String TYPE = "type";
-		public static final String UNARY_EXPRESSION = "unaryExpression";
+		public static final String VARIABLE_DECLARATION_AND_ASSIGNMENT = "variable declaration and assignment";
+		public static final String VARIABLE_DECLARATION = "variable declaration";
+		public static final String VARIABLE_ASSIGNMENT = "variable assignment";
+		public static final String IF_STATEMENT = "if statement";
+		public static final String IF_TRUE = "if true";
+		public static final String IF_FALSE = "if false";
+		public static final String WHILE_STATEMENT = "while statement";
+		public static final String DO_WHILE_STATEMENT = "do-while statement";
+		public static final String TYPE_DECLARATION = "type declaration";
+		public static final String FUNCTION_DEFINITION = "function definition";
+		public static final String TAG = "tag";
+		public static final String RETURN_TYPE = "return type";
 		public static final String UNIT = "unit";
-		public static final String VARIABLE_ASSIGNMENT = "variableAssignment";
-		public static final String VARIABLE_DECLARATION = "variableDeclaration";
-		public static final String VARIABLE_DECLARATION_AND_ASSIGNMENT = "variableDeclarationAndAssignment";
-		public static final String WHILE_STATEMENT = "whileStatement";
-		public static final String XOR_EXPRESSION = "xorExpression";
 
 		private L() {}
 	}

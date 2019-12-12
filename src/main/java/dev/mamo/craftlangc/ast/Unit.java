@@ -6,23 +6,20 @@ import dev.mamo.craftlangc.core.parser.*;
 
 import java.io.*;
 import java.util.*;
-import java.util.stream.*;
 
 public class Unit implements Node, Serializable {
-	private final ParseNode source;
-	private final Namespace namespace;
-	private final List<VariableDeclarationStatement> variableDeclarations;
-	private final List<FunctionDefinition> functions;
+	private ParseNode source;
+	private Namespace namespace;
+	private List<TypeDeclaration> typeDeclarations;
+	private List<VariableDeclarationStatement> variableDeclarations;
+	private List<FunctionDefinition> functionDefinitions;
 
-	public Unit(ParseNode source, Namespace namespace, List<VariableDeclarationStatement> variableDeclarations, List<FunctionDefinition> functions) {
-		this.source = Objects.requireNonNull(source);
-		this.namespace = namespace != null ? namespace : new Namespace("minecraft");
-		this.variableDeclarations = Collections.unmodifiableList(variableDeclarations.stream().map(Objects::requireNonNull).collect(Collectors.toList()));
-		this.functions = Collections.unmodifiableList(functions.stream().map(Objects::requireNonNull).collect(Collectors.toList()));
-	}
-
-	public Unit(ParseNode source, Namespace namespace, VariableDeclarationStatement[] variableDeclarations, FunctionDefinition[] functions) {
-		this(source, namespace, Arrays.asList(variableDeclarations), Arrays.asList(functions));
+	public Unit(ParseNode source, Namespace namespace, List<TypeDeclaration> typeDeclarations, List<VariableDeclarationStatement> variableDeclarations, List<FunctionDefinition> functionDefinitions) {
+		setSource(source);
+		setNamespace(namespace);
+		setTypeDeclarations(typeDeclarations);
+		setVariableDeclarations(variableDeclarations);
+		setFunctionDefinitions(functionDefinitions);
 	}
 
 	@Override
@@ -30,16 +27,41 @@ public class Unit implements Node, Serializable {
 		return source;
 	}
 
+	@Override
+	public void setSource(ParseNode source) {
+		this.source = Objects.requireNonNull(source);
+	}
+
 	public Namespace getNamespace() {
 		return namespace;
+	}
+
+	public void setNamespace(Namespace namespace) {
+		this.namespace = Objects.requireNonNull(namespace);
+	}
+
+	public List<TypeDeclaration> getTypeDeclarations() {
+		return typeDeclarations;
+	}
+
+	public void setTypeDeclarations(List<TypeDeclaration> typeDeclarations) {
+		this.typeDeclarations = Objects.requireNonNull(typeDeclarations);
 	}
 
 	public List<VariableDeclarationStatement> getVariableDeclarations() {
 		return variableDeclarations;
 	}
 
-	public List<FunctionDefinition> getFunctions() {
-		return functions;
+	public void setVariableDeclarations(List<VariableDeclarationStatement> variableDeclarations) {
+		this.variableDeclarations = Objects.requireNonNull(variableDeclarations);
+	}
+
+	public List<FunctionDefinition> getFunctionDefinitions() {
+		return functionDefinitions;
+	}
+
+	public void setFunctionDefinitions(List<FunctionDefinition> functionDefinitions) {
+		this.functionDefinitions = Objects.requireNonNull(functionDefinitions);
 	}
 
 	@Override
@@ -50,8 +72,9 @@ public class Unit implements Node, Serializable {
 		Unit unit = (Unit) obj;
 		return unit.getSource().equals(getSource())
 			&& unit.getNamespace().equals(getNamespace())
+			&& unit.getTypeDeclarations().equals(getTypeDeclarations())
 			&& unit.getVariableDeclarations().equals(getVariableDeclarations())
-			&& unit.getFunctions().equals(getFunctions());
+			&& unit.getFunctionDefinitions().equals(getFunctionDefinitions());
 	}
 
 	@Override
@@ -59,8 +82,9 @@ public class Unit implements Node, Serializable {
 		return Objects.hash(
 			getSource(),
 			getNamespace(),
+			getTypeDeclarations(),
 			getVariableDeclarations(),
-			getFunctions()
+			getFunctionDefinitions()
 		);
 	}
 }

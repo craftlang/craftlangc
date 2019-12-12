@@ -8,16 +8,16 @@ import java.io.*;
 import java.util.*;
 
 public class VariableDeclarationAndAssignmentStatement implements Statement, Serializable {
-	private final ParseNode source;
-	private final Type type;
-	private final String name;
-	private final Expression value;
+	private ParseNode source;
+	private FQN variableTypeFQN;
+	private String variableName;
+	private Expression assignedValue;
 
-	public VariableDeclarationAndAssignmentStatement(ParseNode source, Type type, String name, Expression value) {
-		this.source = Objects.requireNonNull(source);
-		this.type = type;
-		this.name = Objects.requireNonNull(name);
-		this.value = Objects.requireNonNull(value);
+	public VariableDeclarationAndAssignmentStatement(ParseNode source, FQN variableTypeFQN, String variableName, Expression assignedValue) {
+		setSource(source);
+		setVariableTypeFQN(variableTypeFQN);
+		setVariableName(variableName);
+		setAssignedValue(assignedValue);
 	}
 
 	@Override
@@ -25,20 +25,37 @@ public class VariableDeclarationAndAssignmentStatement implements Statement, Ser
 		return source;
 	}
 
-	public Type getType() {
-		return type;
+	@Override
+	public void setSource(ParseNode source) {
+		this.source = Objects.requireNonNull(source);
 	}
 
-	public String getName() {
-		return name;
+	public FQN getVariableTypeFQN() {
+		return variableTypeFQN;
 	}
 
-	public Expression getValue() {
-		return value;
+	public void setVariableTypeFQN(FQN variableTypeFQN) {
+		this.variableTypeFQN = variableTypeFQN;
+	}
+
+	public String getVariableName() {
+		return variableName;
+	}
+
+	public void setVariableName(String variableName) {
+		this.variableName = Objects.requireNonNull(variableName);
+	}
+
+	public Expression getAssignedValue() {
+		return assignedValue;
+	}
+
+	public void setAssignedValue(Expression assignedValue) {
+		this.assignedValue = Objects.requireNonNull(assignedValue);
 	}
 
 	@Override
-	public <T, U extends Throwable> T accept(StatementVisitor<T, U> visitor) throws U {
+	public <T, E extends Throwable> T accept(StatementVisitor<T, E> visitor) throws E {
 		return visitor.visitVariableDeclarationAndAssignmentStatement(this);
 	}
 
@@ -49,18 +66,18 @@ public class VariableDeclarationAndAssignmentStatement implements Statement, Ser
 		}
 		VariableDeclarationAndAssignmentStatement statement = (VariableDeclarationAndAssignmentStatement) obj;
 		return statement.getSource().equals(getSource())
-			&& statement.getType().equals(getType())
-			&& statement.getName().equals(getName())
-			&& statement.getValue().equals(getValue());
+			&& statement.getVariableTypeFQN().equals(getVariableTypeFQN())
+			&& statement.getVariableName().equals(getVariableName())
+			&& statement.getAssignedValue().equals(getAssignedValue());
 	}
 
 	@Override
 	public int hashCode() {
 		return Objects.hash(
 			getSource(),
-			getType(),
-			getName(),
-			getValue()
+			getVariableTypeFQN(),
+			getVariableName(),
+			getAssignedValue()
 		);
 	}
 }

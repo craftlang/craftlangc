@@ -2,16 +2,12 @@ package dev.mamo.craftlangc;
 
 import java.io.*;
 import java.util.*;
-import java.util.stream.*;
 
 public class Namespace implements Serializable {
-	private final List<String> components;
+	private List<String> components;
 
 	public Namespace(List<String> components) {
-		if (components.isEmpty()) {
-			throw new IllegalArgumentException("The components must not be empty");
-		}
-		this.components = Collections.unmodifiableList(components.stream().map(Objects::requireNonNull).collect(Collectors.toList()));
+		setComponents(components);
 	}
 
 	public Namespace(String... components) {
@@ -20,6 +16,10 @@ public class Namespace implements Serializable {
 
 	public List<String> getComponents() {
 		return components;
+	}
+
+	public void setComponents(List<String> components) {
+		this.components = Objects.requireNonNull(components);
 	}
 
 	@Override

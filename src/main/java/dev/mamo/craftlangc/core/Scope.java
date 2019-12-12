@@ -23,19 +23,33 @@ public class Scope<K, V> implements Serializable {
 		this.parent = parent;
 	}
 
-	public V get(K key) {
+	public Scope<K, V> getRoot() {
+		Scope root = this;
+		Scope parent;
+		while ((parent = root.getParent()) != null) {
+			root = parent;
+		}
+		return root;
+	}
+
+	public Scope<K, V> getRoot(K key) {
 		Scope<K, V> scope = this;
 		while (scope != null && !scope.env.containsKey(key)) {
 			scope = scope.getParent();
 		}
+		return scope;
+	}
+
+	public V get(K key) {
+		Scope<K, V> scope = getRoot(key);
 		return scope != null ? scope.env.get(key) : null;
 	}
 
-	public void declare(K key) {
-		declareAndAssign(key, null);
+	public boolean isDefined(K key) {
+		return getRoot(key) != null;
 	}
 
-	public void declareAndAssign(K key, V value) {
+	public void define(K key, V value) {
 		env.put(key, value);
 	}
 
@@ -44,9 +58,19 @@ public class Scope<K, V> implements Serializable {
 		while (scope != null && !scope.env.containsKey(key)) {
 			scope = scope.getParent();
 		}
-		if (scope != null) {
-			scope.env.put(key, value);
+		if (scope == null) {
+			throw new IllegalStateException("Undeclared " + key);
 		}
+		scope.env.put(key, value);
+	}
+
+	public int size() {
+		int size = env.size();
+		Scope<K, V> parent = getParent();
+		if (parent != null) {
+			size += parent.size();
+		}
+		return size;
 	}
 
 	@Override

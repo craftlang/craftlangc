@@ -5,21 +5,16 @@ import dev.mamo.craftlangc.core.parser.*;
 
 import java.io.*;
 import java.util.*;
-import java.util.stream.*;
 
 public class WhileStatement implements Statement, Serializable {
-	private final ParseNode source;
-	private final Expression condition;
-	private final List<Statement> body;
+	private ParseNode source;
+	private Expression condition;
+	private List<Statement> body;
 
 	public WhileStatement(ParseNode source, Expression condition, List<Statement> body) {
-		this.source = Objects.requireNonNull(source);
-		this.condition = Objects.requireNonNull(condition);
-		this.body = Collections.unmodifiableList(body.stream().map(Objects::requireNonNull).collect(Collectors.toList()));
-	}
-
-	public WhileStatement(ParseNode source, Expression condition, Statement... body) {
-		this(source, condition, Arrays.asList(body));
+		setSource(source);
+		setCondition(condition);
+		setBody(body);
 	}
 
 	@Override
@@ -27,16 +22,29 @@ public class WhileStatement implements Statement, Serializable {
 		return source;
 	}
 
+	@Override
+	public void setSource(ParseNode source) {
+		this.source = Objects.requireNonNull(source);
+	}
+
 	public Expression getCondition() {
 		return condition;
+	}
+
+	public void setCondition(Expression condition) {
+		this.condition = Objects.requireNonNull(condition);
 	}
 
 	public List<Statement> getBody() {
 		return body;
 	}
 
+	public void setBody(List<Statement> body) {
+		this.body = Objects.requireNonNull(body);
+	}
+
 	@Override
-	public <T, U extends Throwable> T accept(StatementVisitor<T, U> visitor) throws U {
+	public <T, E extends Throwable> T accept(StatementVisitor<T, E> visitor) throws E {
 		return visitor.visitWhileStatement(this);
 	}
 

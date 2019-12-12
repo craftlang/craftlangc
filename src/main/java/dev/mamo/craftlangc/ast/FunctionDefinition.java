@@ -6,27 +6,22 @@ import dev.mamo.craftlangc.core.parser.*;
 
 import java.io.*;
 import java.util.*;
-import java.util.stream.*;
 
 public class FunctionDefinition implements Node, Serializable {
-	private final ParseNode source;
-	private final List<QualifiedName> tags;
-	private final Type returnType;
-	private final String name;
-	private final List<Parameter> parameters;
-	private final List<Statement> body;
+	private ParseNode source;
+	private List<FQN> tags;
+	private FQN returnTypeFQN;
+	private String name;
+	private List<TypeAndName> parameters;
+	private List<Statement> body;
 
-	public FunctionDefinition(ParseNode source, List<QualifiedName> tags, Type returnType, String name, List<Parameter> parameters, List<Statement> body) {
-		this.source = Objects.requireNonNull(source);
-		this.tags = Collections.unmodifiableList(tags.stream().map(Objects::requireNonNull).collect(Collectors.toList()));
-		this.returnType = returnType;
-		this.name = Objects.requireNonNull(name);
-		this.parameters = Collections.unmodifiableList(parameters.stream().map(Objects::requireNonNull).collect(Collectors.toList()));
-		this.body = Collections.unmodifiableList(body.stream().map(Objects::requireNonNull).collect(Collectors.toList()));
-	}
-
-	public FunctionDefinition(ParseNode source, QualifiedName[] tags, Type returnType, String name, Parameter[] parameters, Statement[] body) {
-		this(source, Arrays.asList(tags), returnType, name, Arrays.asList(parameters), Arrays.asList(body));
+	public FunctionDefinition(ParseNode source, List<FQN> tags, FQN returnTypeFQN, String name, List<TypeAndName> parameters, List<Statement> body) {
+		setSource(source);
+		setTags(tags);
+		setReturnTypeFQN(returnTypeFQN);
+		setName(name);
+		setParameters(parameters);
+		setBody(body);
 	}
 
 	@Override
@@ -34,24 +29,49 @@ public class FunctionDefinition implements Node, Serializable {
 		return source;
 	}
 
-	public List<QualifiedName> getTags() {
+	@Override
+	public void setSource(ParseNode source) {
+		this.source = Objects.requireNonNull(source);
+	}
+
+	public List<FQN> getTags() {
 		return tags;
 	}
 
-	public Type getReturnType() {
-		return returnType;
+	public void setTags(List<FQN> tags) {
+		this.tags = Objects.requireNonNull(tags);
+	}
+
+	public FQN getReturnTypeFQN() {
+		return returnTypeFQN;
+	}
+
+	public void setReturnTypeFQN(FQN returnTypeFQN) {
+		this.returnTypeFQN = returnTypeFQN;
 	}
 
 	public String getName() {
 		return name;
 	}
 
-	public List<Parameter> getParameters() {
+	public void setName(String name) {
+		this.name = Objects.requireNonNull(name);
+	}
+
+	public List<TypeAndName> getParameters() {
 		return parameters;
+	}
+
+	public void setParameters(List<TypeAndName> parameters) {
+		this.parameters = Objects.requireNonNull(parameters);
 	}
 
 	public List<Statement> getBody() {
 		return body;
+	}
+
+	public void setBody(List<Statement> body) {
+		this.body = Objects.requireNonNull(body);
 	}
 
 	@Override
@@ -62,7 +82,7 @@ public class FunctionDefinition implements Node, Serializable {
 		FunctionDefinition functionDefinition = (FunctionDefinition) obj;
 		return functionDefinition.getSource().equals(getSource())
 			&& functionDefinition.getTags().equals(getTags())
-			&& Objects.equals(functionDefinition.getReturnType(), getReturnType())
+			&& Objects.equals(functionDefinition.getReturnTypeFQN(), getReturnTypeFQN())
 			&& functionDefinition.getName().equals(getName())
 			&& functionDefinition.getParameters().equals(getParameters())
 			&& functionDefinition.getBody().equals(getBody());
@@ -70,9 +90,10 @@ public class FunctionDefinition implements Node, Serializable {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(getSource(),
+		return Objects.hash(
+			getSource(),
 			getTags(),
-			getReturnType(),
+			getReturnTypeFQN(),
 			getName(),
 			getParameters(),
 			getBody()

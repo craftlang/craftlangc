@@ -56,15 +56,6 @@ Compiling the code with `java -jar craftlangc.jar <source> -o <destination>` wil
 which is a data pack which you can grab and plug into your world for testing. If you wish, a zip file can be generated
 instead of a plain folder by using `java -jar craftlangc.jar <source> -oz <destination>`.
 
-## Base 62 ##
-
-The Craftlang compiler creates many new scoreboard objectives, often called `cr_<something>_<number>`. Because of the
-16-character objective name limitation of Minecraft, `number` is expressed in base 62 in order to save space.
-
-Base 62 is a numbering system with 62 digits. With this numbering system, 0<sub>62</sub> = 0, 1<sub>62</sub> = 1, ...,
-8<sub>62</sub> = 8, 9<sub>62</sub> = 9, A<sub>62</sub> = 10, B<sub>62</sub> = 11, ..., Y<sub>62</sub> = 34,
-Z<sub>62</sub> = 35, a<sub>62</sub> = 36, b<sub>62</sub> = 37, ..., y<sub>62</sub> = 60, z<sub>62</sub> = 61.
-
 ## Identifiers, names and fully qualified names ##
 
 Minecraft allows to organize the functions of a data pack by some rather arcane rules. It is for example possible to
@@ -387,21 +378,20 @@ exchange of data between raw Minecraft code and generated code, please let me kn
 following certainties which are a consequence of the Craftlang calling convention:
 
  * At the beginning of a function, the arguments of the function will be stored in the player `#cr` using the objectives
-   `cr_arg_1`, `cr_arg_2`, ... There are no guarantees as to what happens to the values of those scores as the function
+   `cr_0`, `cr_1`, ... There are no guarantees as to what happens to the values of those scores as the function
    executes, however using raw Minecraft code immediately as the first statements should avoid the problem altogether:
    
    ```craftlang
    function print(x: int)
-   	/tellraw @a [{"score":{"name":"#cr","objective":"cr_arg_1"}}]
+   	/tellraw @a [{"score":{"name":"#cr","objective":"cr_0"}}]
    
    function increment(x: int): int
-   	/scoreboard players add #cr cr_arg_1 1
-   	/scoreboard players operation #cr cr_ret_1 = #cr cr_arg_1
+   	/scoreboard players add #cr cr_0 1
    ```
 
- * Immediately after a call to a non void function returns, the objective `cr_ret_1` of the player `#cr` will be set to
-   the result provided by the called function. Again, there is no guarantee as to what happens to that score later on;
-   once more, this problem is solved by using the score immediately:
+ * Immediately after a call to a non void function returns, the objective `cr_0` of the player `#cr` will be set to the
+   result provided by the called function. Again, there is no guarantee as to what happens to that score later on; once
+   more, this problem is solved by using the score immediately:
    
    ```craftlang
    function random(): int
@@ -409,7 +399,7 @@ following certainties which are a consequence of the Craftlang calling conventio
    	random = 42
    
    function print_random()
-   	# No assignment to a variable is needed, the score is set whether it is used or not
+   	# No assignment to a store is needed, the score is set whether it is used or not
    	random()
-   	/tellraw @a ["The randomly generated value is: ",{"score":{"name":"#cr","objective":"cr_ret_1"}}]
+   	/tellraw @a ["The randomly generated value is: ",{"score":{"name":"#cr","objective":"cr_0"}}]
    ```

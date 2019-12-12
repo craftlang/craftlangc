@@ -7,12 +7,12 @@ import java.io.*;
 import java.util.*;
 
 public class VariableExpression implements Expression, Serializable {
-	private final ParseNode source;
-	private final QualifiedName name;
+	private ParseNode source;
+	private FQN variableFQN;
 
-	public VariableExpression(ParseNode source, QualifiedName name) {
-		this.source = Objects.requireNonNull(source);
-		this.name = Objects.requireNonNull(name);
+	public VariableExpression(ParseNode source, FQN variableFQN) {
+		setSource(source);
+		setFQN(variableFQN);
 	}
 
 	@Override
@@ -20,12 +20,21 @@ public class VariableExpression implements Expression, Serializable {
 		return source;
 	}
 
-	public QualifiedName getName() {
-		return name;
+	@Override
+	public void setSource(ParseNode source) {
+		this.source = Objects.requireNonNull(source);
+	}
+
+	public FQN getFQN() {
+		return variableFQN;
+	}
+
+	public void setFQN(FQN fqn) {
+		this.variableFQN = Objects.requireNonNull(fqn);
 	}
 
 	@Override
-	public <T, U extends Throwable> T accept(ExpressionVisitor<T, U> visitor) throws U {
+	public <T, E extends Throwable> T accept(ExpressionVisitor<T, E> visitor) throws E {
 		return visitor.visitVariableExpression(this);
 	}
 
@@ -36,14 +45,14 @@ public class VariableExpression implements Expression, Serializable {
 		}
 		VariableExpression expression = (VariableExpression) obj;
 		return expression.getSource().equals(getSource())
-			&& expression.getName().equals(getName());
+			&& expression.getFQN().equals(getFQN());
 	}
 
 	@Override
 	public int hashCode() {
 		return Objects.hash(
 			getSource(),
-			getName()
+			getFQN()
 		);
 	}
 }

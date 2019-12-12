@@ -1,31 +1,31 @@
 package dev.mamo.craftlangc.ast.statement;
 
-public interface StatementVisitor<T, U extends Throwable> {
-	default T visitVariableDeclarationAndAssignmentStatement(VariableDeclarationAndAssignmentStatement statement) throws U {
+public interface StatementVisitor<T, E extends Throwable> {
+	default T visitVariableDeclarationAndAssignmentStatement(VariableDeclarationAndAssignmentStatement statement) throws E {
 		return null;
 	}
 
-	default T visitVariableDeclarationStatement(VariableDeclarationStatement statement) throws U {
+	default T visitVariableDeclarationStatement(VariableDeclarationStatement statement) throws E {
 		return null;
 	}
 
-	default T visitVariableAssignmentStatement(VariableAssignmentStatement statement) throws U {
+	default T visitVariableAssignmentStatement(VariableAssignmentStatement statement) throws E {
 		return null;
 	}
 
-	default T visitIfStatement(IfStatement statement) throws U {
+	default T visitIfStatement(IfStatement statement) throws E {
 		return null;
 	}
 
-	default T visitWhileStatement(WhileStatement statement) throws U {
+	default T visitWhileStatement(WhileStatement statement) throws E {
 		return null;
 	}
 
-	default T visitDoWhileStatement(DoWhileStatement statement) throws U {
+	default T visitDoWhileStatement(DoWhileStatement statement) throws E {
 		return null;
 	}
 
-	default T visitExpressionStatement(ExpressionStatement statement) throws U {
+	default T visitExpressionStatement(ExpressionStatement statement) throws E {
 		return null;
 	}
 }

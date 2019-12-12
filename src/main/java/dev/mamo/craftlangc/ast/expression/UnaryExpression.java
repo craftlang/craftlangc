@@ -7,14 +7,14 @@ import java.io.*;
 import java.util.*;
 
 public class UnaryExpression implements Expression, Serializable {
-	private final ParseNode source;
-	private final UnaryOperator operator;
-	private final Expression operand;
+	private ParseNode source;
+	private UnaryOperator operator;
+	private Expression operand;
 
 	public UnaryExpression(ParseNode source, UnaryOperator operator, Expression operand) {
-		this.source = Objects.requireNonNull(source);
-		this.operator = Objects.requireNonNull(operator);
-		this.operand = Objects.requireNonNull(operand);
+		setSource(source);
+		setOperator(operator);
+		setOperand(operand);
 	}
 
 	@Override
@@ -22,16 +22,29 @@ public class UnaryExpression implements Expression, Serializable {
 		return source;
 	}
 
+	@Override
+	public void setSource(ParseNode source) {
+		this.source = Objects.requireNonNull(source);
+	}
+
 	public UnaryOperator getOperator() {
 		return operator;
+	}
+
+	public void setOperator(UnaryOperator operator) {
+		this.operator = Objects.requireNonNull(operator);
 	}
 
 	public Expression getOperand() {
 		return operand;
 	}
 
+	public void setOperand(Expression operand) {
+		this.operand = Objects.requireNonNull(operand);
+	}
+
 	@Override
-	public <T, U extends Throwable> T accept(ExpressionVisitor<T, U> visitor) throws U {
+	public <T, E extends Throwable> T accept(ExpressionVisitor<T, E> visitor) throws E {
 		return visitor.visitUnaryExpression(this);
 	}
 

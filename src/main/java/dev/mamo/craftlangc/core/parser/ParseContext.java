@@ -4,16 +4,20 @@ import java.io.*;
 import java.util.*;
 
 public class ParseContext implements Serializable {
-	private final String source;
+	private String source;
 	private int position = 0;
 	private Error furthestError = null;
 
 	public ParseContext(String source) {
-		this.source = Objects.requireNonNull(source);
+		setSource(source);
 	}
 
 	public String getSource() {
 		return source;
+	}
+
+	public void setSource(String source) {
+		this.source = Objects.requireNonNull(source);
 	}
 
 	public int getPosition() {
@@ -39,16 +43,9 @@ public class ParseContext implements Serializable {
 	}
 
 	public String advance(int maxOffset) {
-		if (maxOffset <= 0) {
-			return "";
-		}
-
-		String source = getSource();
-		int position = getPosition();
-		int newPosition = Math.min(position + maxOffset, source.length());
-		String result = source.substring(position, newPosition);
-		setPosition(newPosition);
-		return result;
+		String peek = peek(maxOffset);
+		setPosition(getPosition() + peek.length());
+		return peek;
 	}
 
 	public Error getFurthestError() {

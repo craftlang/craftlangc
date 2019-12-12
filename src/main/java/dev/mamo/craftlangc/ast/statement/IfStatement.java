@@ -5,23 +5,18 @@ import dev.mamo.craftlangc.core.parser.*;
 
 import java.io.*;
 import java.util.*;
-import java.util.stream.*;
 
 public class IfStatement implements Statement, Serializable {
-	private final ParseNode source;
-	private final Expression condition;
-	private final List<Statement> ifTrue;
-	private final List<Statement> ifFalse;
+	private ParseNode source;
+	private Expression condition;
+	private List<Statement> trueBranch;
+	private List<Statement> falseBranch;
 
-	public IfStatement(ParseNode source, Expression condition, List<Statement> ifTrue, List<Statement> ifFalse) {
-		this.source = Objects.requireNonNull(source);
-		this.condition = Objects.requireNonNull(condition);
-		this.ifTrue = Collections.unmodifiableList(ifTrue.stream().map(Objects::requireNonNull).collect(Collectors.toList()));
-		this.ifFalse = Collections.unmodifiableList(ifFalse.stream().map(Objects::requireNonNull).collect(Collectors.toList()));
-	}
-
-	public IfStatement(ParseNode source, Expression condition, Statement[] ifTrue, Statement[] ifFalse) {
-		this(source, condition, Arrays.asList(ifTrue), Arrays.asList(ifFalse));
+	public IfStatement(ParseNode source, Expression condition, List<Statement> trueBranch, List<Statement> falseBranch) {
+		setSource(source);
+		setCondition(condition);
+		setTrueBranch(trueBranch);
+		setFalseBranch(falseBranch);
 	}
 
 	@Override
@@ -29,20 +24,37 @@ public class IfStatement implements Statement, Serializable {
 		return source;
 	}
 
+	@Override
+	public void setSource(ParseNode source) {
+		this.source = Objects.requireNonNull(source);
+	}
+
 	public Expression getCondition() {
 		return condition;
 	}
 
-	public List<Statement> getIfTrue() {
-		return ifTrue;
+	public void setCondition(Expression condition) {
+		this.condition = Objects.requireNonNull(condition);
 	}
 
-	public List<Statement> getIfFalse() {
-		return ifFalse;
+	public List<Statement> getTrueBranch() {
+		return trueBranch;
+	}
+
+	public void setTrueBranch(List<Statement> trueBranch) {
+		this.trueBranch = Objects.requireNonNull(trueBranch);
+	}
+
+	public List<Statement> getFalseBranch() {
+		return falseBranch;
+	}
+
+	public void setFalseBranch(List<Statement> falseBranch) {
+		this.falseBranch = Objects.requireNonNull(falseBranch);
 	}
 
 	@Override
-	public <T, U extends Throwable> T accept(StatementVisitor<T, U> visitor) throws U {
+	public <T, E extends Throwable> T accept(StatementVisitor<T, E> visitor) throws E {
 		return visitor.visitIfStatement(this);
 	}
 
@@ -54,8 +66,8 @@ public class IfStatement implements Statement, Serializable {
 		IfStatement statement = (IfStatement) obj;
 		return statement.getSource().equals(getSource())
 			&& statement.getCondition().equals(getCondition())
-			&& statement.getIfTrue().equals(getIfTrue())
-			&& statement.getIfFalse().equals(getIfFalse());
+			&& statement.getTrueBranch().equals(getTrueBranch())
+			&& statement.getFalseBranch().equals(getFalseBranch());
 	}
 
 	@Override
@@ -63,8 +75,8 @@ public class IfStatement implements Statement, Serializable {
 		return Objects.hash(
 			getSource(),
 			getCondition(),
-			getIfTrue(),
-			getIfFalse()
+			getTrueBranch(),
+			getFalseBranch()
 		);
 	}
 }

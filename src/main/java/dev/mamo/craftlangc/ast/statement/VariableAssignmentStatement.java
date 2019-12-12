@@ -8,16 +8,16 @@ import java.io.*;
 import java.util.*;
 
 public class VariableAssignmentStatement implements Statement, Serializable {
-	private final ParseNode source;
-	private final QualifiedName name;
-	private final AssignmentOperator operator;
-	private final Expression value;
+	private ParseNode source;
+	private FQN variableFQN;
+	private AssignmentOperator operator;
+	private Expression value;
 
-	public VariableAssignmentStatement(ParseNode source, QualifiedName name, AssignmentOperator operator, Expression value) {
-		this.source = Objects.requireNonNull(source);
-		this.name = Objects.requireNonNull(name);
-		this.operator = Objects.requireNonNull(operator);
-		this.value = Objects.requireNonNull(value);
+	public VariableAssignmentStatement(ParseNode source, FQN variableFQN, AssignmentOperator operator, Expression value) {
+		setSource(source);
+		setVariableFQN(variableFQN);
+		setOperator(operator);
+		setValue(value);
 	}
 
 	@Override
@@ -25,20 +25,37 @@ public class VariableAssignmentStatement implements Statement, Serializable {
 		return source;
 	}
 
-	public QualifiedName getName() {
-		return name;
+	@Override
+	public void setSource(ParseNode source) {
+		this.source = Objects.requireNonNull(source);
+	}
+
+	public FQN getVariableFQN() {
+		return variableFQN;
+	}
+
+	public void setVariableFQN(FQN variableFQN) {
+		this.variableFQN = Objects.requireNonNull(variableFQN);
 	}
 
 	public AssignmentOperator getOperator() {
 		return operator;
 	}
 
+	public void setOperator(AssignmentOperator operator) {
+		this.operator = Objects.requireNonNull(operator);
+	}
+
 	public Expression getValue() {
 		return value;
 	}
 
+	public void setValue(Expression value) {
+		this.value = Objects.requireNonNull(value);
+	}
+
 	@Override
-	public <T, U extends Throwable> T accept(StatementVisitor<T, U> visitor) throws U {
+	public <T, E extends Throwable> T accept(StatementVisitor<T, E> visitor) throws E {
 		return visitor.visitVariableAssignmentStatement(this);
 	}
 
@@ -49,7 +66,7 @@ public class VariableAssignmentStatement implements Statement, Serializable {
 		}
 		VariableAssignmentStatement statement = (VariableAssignmentStatement) obj;
 		return statement.getSource().equals(getSource())
-			&& statement.getName().equals(getName())
+			&& statement.getVariableFQN().equals(getVariableFQN())
 			&& statement.getOperator().equals(getOperator())
 			&& statement.getValue().equals(getValue());
 	}
@@ -57,7 +74,7 @@ public class VariableAssignmentStatement implements Statement, Serializable {
 	@Override
 	public int hashCode() {
 		return Objects.hash(getSource(),
-			getName(),
+			getVariableFQN(),
 			getOperator(),
 			getValue()
 		);

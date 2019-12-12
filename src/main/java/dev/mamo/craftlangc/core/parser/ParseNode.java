@@ -4,25 +4,23 @@ import dev.mamo.craftlangc.core.*;
 
 import java.util.*;
 import java.util.function.*;
-import java.util.stream.*;
 
 public class ParseNode {
 	private static final String NL = System.lineSeparator();
 	private static final String TAB = "\t";
 
-	private final String label;
-	private final String source;
-	private final int beginIndex;
-	private final int endIndex;
-	private final List<ParseNode> children;
+	private String label;
+	private String source;
+	private int beginIndex;
+	private int endIndex;
+	private List<ParseNode> children;
 
 	public ParseNode(String label, String source, int beginIndex, int endIndex, List<ParseNode> children) {
-		source.substring(beginIndex, endIndex); // Throws exception if arguments are invalid
-		this.label = label;
-		this.source = Objects.requireNonNull(source);
-		this.beginIndex = beginIndex;
-		this.endIndex = endIndex;
-		this.children = Collections.unmodifiableList(children.stream().map(Objects::requireNonNull).collect(Collectors.toList()));
+		setLabel(label);
+		setSource(source);
+		setEndIndex(endIndex);
+		setBeginIndex(beginIndex);
+		setChildren(children);
 	}
 
 	public ParseNode(String source, int beginIndex, int endIndex, List<ParseNode> children) {
@@ -41,16 +39,34 @@ public class ParseNode {
 		return label;
 	}
 
+	public void setLabel(String label) {
+		this.label = label;
+	}
+
 	public String getSource() {
 		return source;
+	}
+
+	public void setSource(String source) {
+		this.source = Objects.requireNonNull(source);
 	}
 
 	public int getBeginIndex() {
 		return beginIndex;
 	}
 
+	public void setBeginIndex(int beginIndex) {
+		source.substring(beginIndex, endIndex); // Throws exception if arguments are invalid
+		this.beginIndex = beginIndex;
+	}
+
 	public int getEndIndex() {
 		return endIndex;
+	}
+
+	public void setEndIndex(int endIndex) {
+		source.substring(beginIndex, endIndex); // Throws exception if arguments are invalid
+		this.endIndex = endIndex;
 	}
 
 	public int getLength() {
@@ -65,26 +81,29 @@ public class ParseNode {
 		return children;
 	}
 
-	public ParseNode flatten(boolean recursive) {
-		List<ParseNode> children = new ArrayList<>();
-
-		for (ParseNode child : getChildren()) {
-			if (recursive) {
-				child = child.flatten(true);
-			}
-
-			if (child.getLabel() != null) {
-				children.add(child);
-			} else {
-				children.addAll(child.getChildren());
-			}
-		}
-
-		return new ParseNode(getLabel(), getSource(), getBeginIndex(), getEndIndex(), children);
+	public void setChildren(List<ParseNode> children) {
+		this.children = Objects.requireNonNull(children);
 	}
 
-	public ParseNode flatten() {
-		return flatten(true);
+	public void flatten(boolean recursive) {
+		ListIterator<ParseNode> childrenIterator = getChildren().listIterator();
+
+		while (childrenIterator.hasNext()) {
+			ParseNode child = childrenIterator.next();
+
+			if (recursive) {
+				child.flatten(true);
+			}
+
+			if (child.getLabel() == null) {
+				childrenIterator.remove();
+				child.getChildren().forEach(childrenIterator::add);
+			}
+		}
+	}
+
+	public void flatten() {
+		flatten(true);
 	}
 
 	public boolean equals(Object obj) {
@@ -132,7 +151,7 @@ public class ParseNode {
 						if (label != null) {
 							result.append(' ');
 						}
-						result.append(Util.quote(content));
+						result.append(Utils.quote(content));
 					}
 				} else {
 					if (wide) {

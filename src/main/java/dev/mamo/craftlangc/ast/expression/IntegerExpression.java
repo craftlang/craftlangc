@@ -6,12 +6,12 @@ import java.io.*;
 import java.util.*;
 
 public class IntegerExpression implements Expression, Serializable {
-	private final ParseNode source;
-	private final int integer;
+	private ParseNode source;
+	private int value;
 
-	public IntegerExpression(ParseNode source, int integer) {
-		this.source = source;
-		this.integer = integer;
+	public IntegerExpression(ParseNode source, int value) {
+		setSource(source);
+		setValue(value);
 	}
 
 	@Override
@@ -19,12 +19,21 @@ public class IntegerExpression implements Expression, Serializable {
 		return source;
 	}
 
-	public int getInteger() {
-		return integer;
+	@Override
+	public void setSource(ParseNode source) {
+		this.source = Objects.requireNonNull(source);
+	}
+
+	public int getValue() {
+		return value;
+	}
+
+	public void setValue(int value) {
+		this.value = value;
 	}
 
 	@Override
-	public <T, U extends Throwable> T accept(ExpressionVisitor<T, U> visitor) throws U {
+	public <T, E extends Throwable> T accept(ExpressionVisitor<T, E> visitor) throws E {
 		return visitor.visitIntegerExpression(this);
 	}
 
@@ -35,14 +44,14 @@ public class IntegerExpression implements Expression, Serializable {
 		}
 		IntegerExpression expression = (IntegerExpression) obj;
 		return expression.getSource().equals(getSource())
-			&& expression.getInteger() == getInteger();
+			&& expression.getValue() == getValue();
 	}
 
 	@Override
 	public int hashCode() {
 		return Objects.hash(
 			getSource(),
-			getInteger()
+			getValue()
 		);
 	}
 }

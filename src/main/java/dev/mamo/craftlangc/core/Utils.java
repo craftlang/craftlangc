@@ -5,20 +5,21 @@ import java.nio.file.*;
 import java.nio.file.attribute.*;
 import java.util.*;
 
-public class Util {
-	private Util() {}
+public class Utils {
+	private Utils() {}
 
-	@SuppressWarnings("unchecked")
-	public static <K, V> Map<K, V> map(List<Object> entries) {
-		Map<K, V> result = new HashMap<>();
-		for (int i = 0; i < entries.size(); i += 2) {
-			result.put((K) entries.get(i), (V) entries.get(i + 1));
-		}
-		return result;
+	@SafeVarargs
+	public static <T> T[] arrayOf(T... values) {
+		return values;
 	}
 
-	public static <K, V> Map<K, V> map(Object... entries) {
-		return map(Arrays.asList(entries));
+	@SuppressWarnings("unchecked")
+	public static <K, V> Map<K, V> mapOf(Object... entries) {
+		Map<K, V> result = new LinkedHashMap<>();
+		for (int i = 0, count = entries.length; i < count; i += 2) {
+			result.put((K) entries[i], (V) entries[i + 1]);
+		}
+		return result;
 	}
 
 	public static String quote(String string) {
@@ -63,8 +64,10 @@ public class Util {
 
 	public static String toBase62(int integer) {
 		StringBuilder result = new StringBuilder();
+
 		for (; integer != 0; integer = Integer.divideUnsigned(integer, 62)) {
 			int remainder = Integer.remainderUnsigned(integer, 62);
+
 			if (remainder <= 9) {
 				result.insert(0, remainder);
 			} else if (remainder <= 35) {
@@ -73,6 +76,7 @@ public class Util {
 				result.insert(0, (char) (remainder + 61));
 			}
 		}
+
 		return result.length() > 0 ? result.toString() : "0";
 	}
 

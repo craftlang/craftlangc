@@ -1,27 +1,27 @@
 package dev.mamo.craftlangc.ast.expression;
 
-public interface ExpressionVisitor<T, U extends Throwable> {
-	default T visitBinaryExpression(BinaryExpression expression) throws U {
+public interface ExpressionVisitor<T, E extends Throwable> {
+	default T visitBinaryExpression(BinaryExpression expression) throws E {
 		return null;
 	}
 
-	default T visitUnaryExpression(UnaryExpression expression) throws U {
+	default T visitUnaryExpression(UnaryExpression expression) throws E {
 		return null;
 	}
 
-	default T visitIntegerExpression(IntegerExpression expression) throws U {
+	default T visitIntegerExpression(IntegerExpression expression) throws E {
 		return null;
 	}
 
-	default T visitCommandExpression(CommandExpression expression) throws U {
+	default T visitCommandExpression(CommandExpression expression) throws E {
 		return null;
 	}
 
-	default T visitFunctionCallExpression(FunctionCallExpression expression) throws U {
+	default T visitFunctionCallExpression(CallExpression expression) throws E {
 		return null;
 	}
 
-	default T visitVariableExpression(VariableExpression expression) throws U {
+	default T visitVariableExpression(VariableExpression expression) throws E {
 		return null;
 	}
 }

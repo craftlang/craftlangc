@@ -7,16 +7,16 @@ import java.io.*;
 import java.util.*;
 
 public class BinaryExpression implements Expression, Serializable {
-	private final ParseNode source;
-	private final Expression left;
-	private final BinaryOperator operator;
-	private final Expression right;
+	private ParseNode source;
+	private Expression left;
+	private BinaryOperator operator;
+	private Expression right;
 
 	public BinaryExpression(ParseNode source, Expression left, BinaryOperator operator, Expression right) {
-		this.source = Objects.requireNonNull(source);
-		this.left = Objects.requireNonNull(left);
-		this.operator = Objects.requireNonNull(operator);
-		this.right = Objects.requireNonNull(right);
+		setSource(source);
+		setLeft(left);
+		setOperator(operator);
+		setRight(right);
 	}
 
 	@Override
@@ -24,20 +24,37 @@ public class BinaryExpression implements Expression, Serializable {
 		return source;
 	}
 
+	@Override
+	public void setSource(ParseNode source) {
+		this.source = Objects.requireNonNull(source);
+	}
+
 	public Expression getLeft() {
 		return left;
+	}
+
+	public void setLeft(Expression left) {
+		this.left = Objects.requireNonNull(left);
 	}
 
 	public BinaryOperator getOperator() {
 		return operator;
 	}
 
+	public void setOperator(BinaryOperator operator) {
+		this.operator = Objects.requireNonNull(operator);
+	}
+
 	public Expression getRight() {
 		return right;
 	}
 
+	public void setRight(Expression right) {
+		this.right = Objects.requireNonNull(right);
+	}
+
 	@Override
-	public <T, U extends Throwable> T accept(ExpressionVisitor<T, U> visitor) throws U {
+	public <T, E extends Throwable> T accept(ExpressionVisitor<T, E> visitor) throws E {
 		return visitor.visitBinaryExpression(this);
 	}
 
