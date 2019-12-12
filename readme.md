@@ -174,18 +174,18 @@ fun set_day_and_clear_weather()
 Sometimes, you'll want to call functions from raw Minecraft code, without relying on Craftlang. In that case, you'll
 have to follow the Craftlang calling convention:
 
- * For each argument of the function, from left to right, set the objective `cr_arg_<n>` of the player `#cr` to the
-   appropriate value. `n` is the argument number starting at 1, expressed in base 62.
+ * For each argument of the function, from left to right, set the objective `cr_<n>` of the player `#cr` to the
+   appropriate value. `n` is the argument number starting at 0.
  
- * If the function returns a value, it will be stored in the objective `cr_ret_1` of the player `#cr`.
+ * If the function returns a value, it will be stored in the objective `cr_0` of the player `#cr`.
 
 For example, the equivalent of calling `math.trig.atan2(2, 1)` would be:
 
 ```mcfunction
-scoreboard players set #cr cr_arg_1 2
-scoreboard players set #cr cr_arg_2 1
+scoreboard players set #cr cr_0 2
+scoreboard players set #cr cr_1 1
 function math:trig/atan2
-# The return value is now stored in the score cr_ret_1 of the player #cr 
+# The return value is now stored in the score cr_0 of the player #cr 
 ```
 
 ## Variables ##
