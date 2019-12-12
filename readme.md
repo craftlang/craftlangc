@@ -42,13 +42,13 @@ fun factorial(x: int): int
 # Run this once the data pack has loaded
 tag load
 fun onload()
-	/schedule function this:is/your/namespace/scheduled 2s
+	/schedule function some:namespace/scheduled 2s
 
 fun scheduled()
 	var i = 0
 	while i <= 10
 		factorial(i)
-		/execute as @e[tag=cr_frame] if score @s cr_id = #cr cr_fp run tellraw @a ["factorial(",{"score":{"name":"@s","objective":"cr_local_1"}},") = ",{"score":{"name":"#cr","objective":"cr_ret_1"}}]
+		/execute as @e[tag=cr_frame] if score @s cr_id = #cr cr_fp run tellraw @a ["factorial(",{"score":{"name":"@s","objective":"cr_0"}},") = ",{"score":{"name":"#cr","objective":"cr_0"}}]
 		i += 1
 ```
 
